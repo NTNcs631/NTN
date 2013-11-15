@@ -32,7 +32,7 @@ SRCS = main.c net.c
 OBJS = $(SRCS:.c=.o)
 
 # name of the executable file 
-MAIN = NTN
+MAIN = sws
 
 #
 # Where the magic happens :P
