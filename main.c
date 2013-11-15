@@ -89,7 +89,7 @@ main(int argc, char *argv[])
 {
   int ch;
   char *c_dir=NULL, *l_file=NULL, *sws_dir=NULL,
-       *i_address = "127.0.0.1";
+       *i_address = "0.0.0.0";
   int p_port = 8080;
 
   // printf("argc: %d  argv: %s\n", argc, *argv);

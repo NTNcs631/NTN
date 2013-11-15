@@ -67,8 +67,7 @@ startsws(char *i_address, int p_port)
    
   while (1) {    
     /* 
-     * Listen on the socket for connections,
-     * and set the size of backlog queue to 5. 
+     * Listen on the socket for connections.
      */
     if (listen(socket_fd, 5) < 0) {    
       perror("server: listen");    
