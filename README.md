@@ -32,3 +32,7 @@ in the UNIX Environment, Fall 2013, SIT.
 3. Client~INFO may not be displayed correctly occasionally when using telnet to connect. (Web browser connection behaved better.)
 
 4. Always show the usage when giving a local direction. (example: ./sws dir)
+
+5. No support for IPv6 
+
+6. Does not handle simultaneous clients, only sequential.
