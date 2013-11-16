@@ -2,6 +2,7 @@
 /* $NetBSD: main.c,v 1.02 2013/11/15 19:37:40 Lin Exp $ */
 /* $NetBSD: main.c,v 1.03 2013/11/15 19:42:40 Lin Exp $ */
 /* $NetBSD: main.c,v 1.04 2013/11/15 20:14:40 Lin Exp $ */
+/* $NetBSD: main.c,v 1.05 2013/11/15 20:23:00 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -60,7 +61,7 @@ usage()
 }
 
 int
-dircheck(char *dir)
+dir_check(char *dir)
 {
   struct stat dir_stat;
 
@@ -86,7 +87,7 @@ dircheck(char *dir)
 }
 
 int
-ipcheck(char *ip)
+ip_check(char *ip)
 {
   if (inet_addr(ip)==INADDR_NONE) {
     fprintf(stderr, "IP address not valid: %s\n", ip);
@@ -97,7 +98,7 @@ ipcheck(char *ip)
 }
 
 int
-filecheck(char *file)
+file_check(char *file)
 {
   struct stat file_stat;
 
@@ -121,7 +122,7 @@ filecheck(char *file)
 }
 
 int
-portcheck(int port)
+port_check(int port)
 {
   if (port <= 0) {
     fprintf(stderr, "Port not valid\n");
@@ -130,8 +131,6 @@ portcheck(int port)
   else
     return 0;
 }
-
-
 
 
 /*
@@ -159,25 +158,25 @@ main(int argc, char *argv[])
 
     case 'c':
       c_dir = optarg;
-      if(dircheck(c_dir))
+      if(dir_check(c_dir))
         exit(EXIT_FAILURE);
       break;
 
     case 'i':
       i_address = optarg;
-      if (ipcheck(i_address))
+      if (ip_check(i_address))
         exit(EXIT_FAILURE);
       break;
 
     case 'l':
       l_file = optarg;
-      if (filecheck(l_file))
+      if (file_check(l_file))
         exit(EXIT_FAILURE);
       break;
 
     case 'p':
       p_port = atoi(optarg);
-	  if (portcheck(p_port))
+	  if (port_check(p_port))
         exit(EXIT_FAILURE);
       break;
 
@@ -194,7 +193,7 @@ main(int argc, char *argv[])
   //sws_dir = argv[0];
   else
     usage();
-  if (dircheck(sws_dir))
+  if (dir_check(sws_dir))
     exit(EXIT_FAILURE);
 
   // printf("flag_d: %d, flag_h: %d\n", flag_d, flag_h);
