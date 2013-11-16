@@ -1,6 +1,7 @@
 /* $NetBSD: main.c,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
 /* $NetBSD: main.c,v 1.02 2013/11/15 19:37:40 Lin Exp $ */
-/* $NetBSD: main.c,v 1.02 2013/11/15 19:42:40 Lin Exp $ */
+/* $NetBSD: main.c,v 1.03 2013/11/15 19:42:40 Lin Exp $ */
+/* $NetBSD: main.c,v 1.04 2013/11/15 20:14:40 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -119,6 +120,18 @@ filecheck(char *file)
   }
 }
 
+int
+portcheck(int port)
+{
+  if (port <= 0) {
+    fprintf(stderr, "Port not valid\n");
+    return 1;
+  }
+  else
+    return 0;
+}
+
+
 
 
 /*
@@ -164,6 +177,8 @@ main(int argc, char *argv[])
 
     case 'p':
       p_port = atoi(optarg);
+	  if (portcheck(p_port))
+        exit(EXIT_FAILURE);
       break;
 
     default:
