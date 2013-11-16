@@ -95,6 +95,31 @@ ipcheck(char *ip)
     return 0;
 }
 
+int
+filecheck(char *file)
+{
+  struct stat file_stat;
+
+  if (stat(file, &file_stat) == -1) {
+    if(errno == ENOENT) {
+      fprintf(stderr, "No such file: %s\n", file);
+      return 1;
+    }
+    else {
+      perror("Stat Error");
+      return 1;
+    }
+  } 
+
+  if(S_ISREG(file_stat.st_mode))
+    return 0;
+  else {
+    fprintf(stderr, "Not a regular file: %s\n", file);
+    return 1;
+  }
+}
+
+
 
 /*
  * Main
@@ -133,6 +158,8 @@ main(int argc, char *argv[])
 
     case 'l':
       l_file = optarg;
+      if (filecheck(l_file))
+        exit(EXIT_FAILURE);
       break;
 
     case 'p':
@@ -152,6 +179,8 @@ main(int argc, char *argv[])
   //sws_dir = argv[0];
   else
     usage();
+  if (dircheck(sws_dir))
+    exit(EXIT_FAILURE);
 
   // printf("flag_d: %d, flag_h: %d\n", flag_d, flag_h);
   // printf("argc: %d  argv: %s\n", argc, *argv);
@@ -161,8 +190,7 @@ main(int argc, char *argv[])
   /* Options Validation Check */
   // if (c_dir != NULL)
   //   dircheck(c_dir);
-  if (dircheck(sws_dir))
-    exit(EXIT_FAILURE);
+
 
   startsws(i_address, p_port);
 
