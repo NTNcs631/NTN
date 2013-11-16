@@ -1,5 +1,6 @@
 /* $NetBSD: main.c,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
 /* $NetBSD: main.c,v 1.02 2013/11/15 19:37:40 Lin Exp $ */
+/* $NetBSD: main.c,v 1.02 2013/11/15 19:42:40 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -95,7 +96,7 @@ main(int argc, char *argv[])
 
   // printf("argc: %d  argv: %s\n", argc, *argv);
 
-  while ((ch = getopt(argc, argv, "dhcilp")) != -1) {
+  while ((ch = getopt(argc, argv, "dhc:i:l:p:")) != -1) {
     switch (ch) {
     case 'd':
       flag_d = 1;
@@ -106,23 +107,19 @@ main(int argc, char *argv[])
       break;
 
     case 'c':
-      c_dir = argv[optind];
-      optind++;
+      c_dir = optarg;
       break;
 
     case 'i':
-      i_address = argv[optind];
-      optind++;
+      i_address = optarg;
       break;
 
     case 'l':
-      l_file = argv[optind];
-      optind++;
+      l_file = optarg;
       break;
 
     case 'p':
-      p_port = atoi(argv[optind]);
-      optind++;
+      p_port = atoi(optarg);
       break;
 
     default:
