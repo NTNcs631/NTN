@@ -57,7 +57,7 @@ usage()
   /* NOTREACHED */
 }
 
-void
+int
 dircheck(char *dir)
 {
   struct stat dir_stat;
@@ -65,19 +65,19 @@ dircheck(char *dir)
   if (stat(dir, &dir_stat) == -1) {
     if(errno == ENOENT) {
       fprintf(stderr, "No such directory: %s\n", dir);
-      exit(EXIT_FAILURE);
+      return 1;
     }
     else {
       perror("Stat Error");
-      exit(EXIT_FAILURE);
+      return 1;
     }
   } 
 
   if(S_ISDIR(dir_stat.st_mode))
-    exit(EXIT_SUCCESS);
+    return 0;
   else {
     fprintf(stderr, "Not a directory: %s\n", dir);
-    exit(EXIT_FAILURE);
+    return 1;
   }
 
   // closedir(dir);
@@ -108,6 +108,8 @@ main(int argc, char *argv[])
 
     case 'c':
       c_dir = optarg;
+      if(dircheck(c_dir))
+        exit(EXIT_FAILURE);
       break;
 
     case 'i':
@@ -130,7 +132,11 @@ main(int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
-  sws_dir = *argv;
+  if (argc==1)
+    sws_dir = *argv;
+  //sws_dir = argv[0];
+  else
+    usage();
 
   // printf("flag_d: %d, flag_h: %d\n", flag_d, flag_h);
   // printf("argc: %d  argv: %s\n", argc, *argv);
@@ -140,8 +146,8 @@ main(int argc, char *argv[])
   /* Options Validation Check */
   // if (c_dir != NULL)
   //   dircheck(c_dir);
-  if (sws_dir != NULL)
-    dircheck(sws_dir);
+  if (dircheck(sws_dir))
+    exit(EXIT_FAILURE);
 
   startsws(i_address, p_port);
 
