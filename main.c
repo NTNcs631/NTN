@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "net.h"
 
@@ -83,6 +84,18 @@ dircheck(char *dir)
   // closedir(dir);
 }
 
+int
+ipcheck(char *ip)
+{
+  if (inet_addr(ip)==INADDR_NONE) {
+    fprintf(stderr, "IP address not valid: %s\n", ip);
+    return 1;
+  }
+  else
+    return 0;
+}
+
+
 /*
  * Main
  */
@@ -114,6 +127,8 @@ main(int argc, char *argv[])
 
     case 'i':
       i_address = optarg;
+      if (ipcheck(i_address))
+        exit(EXIT_FAILURE);
       break;
 
     case 'l':
