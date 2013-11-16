@@ -1,4 +1,5 @@
 /* $NetBSD: main.c,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
+/* $NetBSD: main.c,v 1.02 2013/11/15 23:39:10 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -34,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "net.h"
 
@@ -55,7 +57,7 @@ usage()
   /* NOTREACHED */
 }
 
-void
+int
 dircheck(char *dir)
 {
   struct stat dir_stat;
@@ -63,23 +65,70 @@ dircheck(char *dir)
   if (stat(dir, &dir_stat) == -1) {
     if(errno == ENOENT) {
       fprintf(stderr, "No such directory: %s\n", dir);
-      exit(EXIT_FAILURE);
+      return 1;
     }
     else {
       perror("Stat Error");
-      exit(EXIT_FAILURE);
+      return 1;
     }
   } 
 
   if(S_ISDIR(dir_stat.st_mode))
-    exit(EXIT_SUCCESS);
+    return 0;
   else {
     fprintf(stderr, "Not a directory: %s\n", dir);
-    exit(EXIT_FAILURE);
+    return 1;
   }
 
   // closedir(dir);
 }
+
+int
+ipcheck(char *ip)
+{
+  if (inet_addr(ip)==INADDR_NONE) {
+    fprintf(stderr, "IP address not valid: %s\n", ip);
+    return 1;
+  }
+  else
+    return 0;
+}
+
+int
+filecheck(char *file)
+{
+  struct stat file_stat;
+
+  if (stat(file, &file_stat) == -1) {
+    if(errno == ENOENT) {
+      fprintf(stderr, "No such file: %s\n", file);
+      return 1;
+    }
+    else {
+      perror("Stat Error");
+      return 1;
+    }
+  } 
+
+  if(S_ISREG(file_stat.st_mode))
+    return 0;
+  else {
+    fprintf(stderr, "Not a regular file: %s\n", file);
+    return 1;
+  }
+}
+
+int
+portcheck(int port)
+{
+  if (port <= 0) {
+    fprintf(stderr, "Port not valid\n");
+    return 1;
+  }
+  else
+    return 0;
+}
+
 
 /*
  * Main
@@ -94,7 +143,7 @@ main(int argc, char *argv[])
 
   // printf("argc: %d  argv: %s\n", argc, *argv);
 
-  while ((ch = getopt(argc, argv, "-dhcilp")) != -1) {
+  while ((ch = getopt(argc, argv, "dhc:i:l:p:")) != -1) {
     switch (ch) {
     case 'd':
       flag_d = 1;
@@ -105,23 +154,27 @@ main(int argc, char *argv[])
       break;
 
     case 'c':
-      c_dir = argv[optind];
-      optind++;
+      c_dir = optarg;
+      if(dircheck(c_dir))
+        exit(EXIT_FAILURE);
       break;
 
     case 'i':
-      i_address = argv[optind];
-      optind++;
+      i_address = optarg;
+      if (ipcheck(i_address))
+        exit(EXIT_FAILURE);
       break;
 
     case 'l':
-      l_file = argv[optind];
-      optind++;
+      l_file = optarg;
+      if (filecheck(l_file))
+        exit(EXIT_FAILURE);
       break;
 
     case 'p':
-      p_port = atoi(argv[optind]);
-      optind++;
+      p_port = atoi(optarg);
+	  if (portcheck(p_port))
+        exit(EXIT_FAILURE);
       break;
 
     default:
@@ -132,7 +185,13 @@ main(int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
-  sws_dir = *argv;
+  if (argc==1)
+    sws_dir = *argv;
+  //sws_dir = argv[0];
+  else
+    usage();
+  if (dircheck(sws_dir))
+    exit(EXIT_FAILURE);
 
   // printf("flag_d: %d, flag_h: %d\n", flag_d, flag_h);
   // printf("argc: %d  argv: %s\n", argc, *argv);
@@ -142,8 +201,7 @@ main(int argc, char *argv[])
   /* Options Validation Check */
   // if (c_dir != NULL)
   //   dircheck(c_dir);
-  if (sws_dir != NULL)
-    dircheck(sws_dir);
+
 
   startsws(i_address, p_port);
 
