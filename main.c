@@ -1,4 +1,5 @@
 /* $NetBSD: main.c,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
+/* $NetBSD: main.c,v 1.02 2013/11/15 19:37:40 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -94,7 +95,7 @@ main(int argc, char *argv[])
 
   // printf("argc: %d  argv: %s\n", argc, *argv);
 
-  while ((ch = getopt(argc, argv, "-dhcilp")) != -1) {
+  while ((ch = getopt(argc, argv, "dhcilp")) != -1) {
     switch (ch) {
     case 'd':
       flag_d = 1;
