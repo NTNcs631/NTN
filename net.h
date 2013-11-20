@@ -1,4 +1,5 @@
 /* $NetBSD: net.h,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
+/* $NetBSD: net.h,v 1.02 2013/11/19 19:18:10 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -28,4 +29,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+
+typedef struct {
+  char *method;
+  char *resource;
+  int status;
+}ReqInfo;
+
+void initreq(ReqInfo *);
 void startsws(char*, int);
+void parsereq(char*, ReqInfo *);

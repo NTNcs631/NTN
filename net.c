@@ -1,4 +1,5 @@
 /* $NetBSD: net.c,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
+/* $NetBSD: net.c,v 1.02 2013/11/19 19:19:10 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -35,33 +36,72 @@
 #include <sys/types.h>
 #include <unistd.h> 
 #include <arpa/inet.h>
+#include <string.h>
+#include <errno.h>
+
+#include "net.h"
+
+char *info[17] = {
+  "200 OK",
+  "201 Created",
+  "202 Accepted",
+  "204 No Content",
+  "301 Moved Permanently",
+  "302 Moved Temporarily",
+  "304 Not Modified",
+  "400 Bad Request",
+  "401 Unauthorized",
+  "403 Forbidden",
+  "404 Not Found",
+  "500 Internal Server Error",
+  "501 Not Implemented",
+  "502 Bad Gateway",
+  "503 Service Unavailable",
+  "505 Version Not Supported",
+  "522 Connection Timed Out status"
+};
 
 void
 startsws(char *i_address, int p_port)
 {    
   int bufsize = 1024;
-  char *buffer = malloc(bufsize);    
-
+  char *buffer;
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
   struct sockaddr_in address;
+  ReqInfo req_info;
  
+  if ((buffer = (char*)malloc(bufsize*sizeof(char))) == NULL) {
+    fprintf(stderr, "Unable to allocate memory: %s\n",
+            strerror(errno));
+    exit(1);
+  }
   printf("\n-----------Starting Sever-----------\n");
   if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
     printf("Socket created: %d\n", socket_fd);
     printf("Binding socket ...\n");
-    printf("(Please re-run sws if pending a long time for socket binging.)\n\n");
+  }
+  else {
+    fprintf(stderr, "Unable to create socket: %s\n",
+            strerror(errno));
+    exit (1);
   }
   
   /* SET socket address/host machine/port number */ 
+  memset(&address, 0, sizeof(address));
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = inet_addr(i_address);
   address.sin_port = htons(p_port);
 
   if (bind(socket_fd, (struct sockaddr *) &address, 
           sizeof(address)) == 0) {
-    printf("Socket Binding Completed:\n Socket: %d | Port: %d | Address: %s \n\n",
+    printf("Socket Binding Completed:\nSocket: %d | Port: %d | Address: %s \n\n",
            socket_fd, p_port, i_address);
+  }
+  else {
+    fprintf(stderr, "Unable to create bind %d: %s\n",
+            socket_fd, strerror(errno));
+    exit (1);
   }
    
    
@@ -91,9 +131,21 @@ startsws(char *i_address, int p_port)
       printf("Client~ INFO");
       printf("-----------------------\n");
     }
+    memset(buffer, 0, strlen(buffer));
+    initreq(& req_info);
     recv(newsocket_fd, buffer, bufsize, 0);
+    parsereq(buffer, & req_info);
     printf("%s\n", buffer);
-    write(newsocket_fd, buffer, 100);
+    if (write(newsocket_fd, info[req_info.status], 
+              strlen(info[req_info.status])) != strlen(info[req_info.status])) {
+      fprintf(stderr, "Unable to write %s: %s\n",
+              info[req_info.status], strerror(errno));
+      exit(1);
+    }
+    if (write(newsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      exit(1);
+    }
     close(newsocket_fd);
   }
   free(buffer);
