@@ -23,7 +23,7 @@ LFLAGS =
 LIBS =
 
 # source files
-SRCS = main.c net.c
+SRCS = main.c net.c http.c
 
 #
 # Below we are replacing the suffix .c of all words in the macro SRCS
