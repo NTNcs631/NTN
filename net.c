@@ -1,4 +1,4 @@
-/* $NetBSD: net.c,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
+/* $NetBSD: net.c,v 1.03 2013/11/20 19:53:33 Weiyu Exp $ */
 /* $NetBSD: net.c,v 1.02 2013/11/19 19:19:10 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
@@ -38,6 +38,8 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include "net.h"
 
@@ -61,21 +63,52 @@ char *info[17] = {
   "522 Connection Timed Out status"
 };
 
-void
-startsws(char *i_address, int p_port)
-{    
+int
+ClientResponse(int clientsocket_fd)
+{
   int bufsize = 1024;
   char *buffer;
-  int socket_fd, newsocket_fd;
-  socklen_t addrlen;
-  struct sockaddr_in address;
   ReqInfo req_info;
- 
+
   if ((buffer = (char*)malloc(bufsize*sizeof(char))) == NULL) {
     fprintf(stderr, "Unable to allocate memory: %s\n",
             strerror(errno));
-    exit(1);
+    return 1;
   }
+  
+  memset(buffer, 0, strlen(buffer));
+  initreq(& req_info);
+  recv(clientsocket_fd, buffer, bufsize, 0);
+  parsereq(buffer, & req_info);
+  printf("-----------------------");
+  printf("Client~ INFO");
+  printf("-----------------------\n");
+  printf("%s\n", buffer);
+  if (write(clientsocket_fd, info[req_info.status], 
+            strlen(info[req_info.status])) != strlen(info[req_info.status])) {
+    fprintf(stderr, "Unable to write %s: %s\n",
+            info[req_info.status], strerror(errno));
+    return 1;
+  }
+  if (write(clientsocket_fd, "\n", 1) != 1) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return 1;
+  }
+  // close(clientsocket_fd);
+  free(buffer);
+
+  return 0;    
+}
+
+void
+startsws(char *i_address, int p_port)
+{    
+  int socket_fd, newsocket_fd;
+  socklen_t addrlen;
+  struct sockaddr_in address;
+  pid_t pid;
+  // int status;
+ 
   printf("\n-----------Starting Sever-----------\n");
   if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
     printf("Socket created: %d\n", socket_fd);
@@ -88,7 +121,7 @@ startsws(char *i_address, int p_port)
   }
   
   /* SET socket address/host machine/port number */ 
-  memset(&address, 0, sizeof(address));
+  // memset(&address, 0, sizeof(address));
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = inet_addr(i_address);
   address.sin_port = htons(p_port);
@@ -103,17 +136,17 @@ startsws(char *i_address, int p_port)
             socket_fd, strerror(errno));
     exit (1);
   }
-   
+
+  /* 
+   * Listen on the socket for connections.
+   */
+  if (listen(socket_fd, 5) < 0) {    
+    perror("server: listen");    
+    exit(1);
+  }
+  
    
   while (1) {    
-    /* 
-     * Listen on the socket for connections.
-     */
-    if (listen(socket_fd, 5) < 0) {    
-      perror("server: listen");    
-      exit(1);
-    }
-   
     /* 
      * Block process until a client connects to the server. 
      */   
@@ -124,30 +157,20 @@ startsws(char *i_address, int p_port)
     }
 
     /*
-     * Client Connection Information
+     * Client Connection Response
      */
-    if (newsocket_fd > 0) {
-      printf("-----------------------");
-      printf("Client~ INFO");
-      printf("-----------------------\n");
+    if ((pid = fork()) < 0)
+      printf("Failed to fork process to response client request.\n");
+
+    if (pid == 0) {             /* Child Process */
+      close(socket_fd);
+      if (ClientResponse(newsocket_fd) > 0)
+        printf("ClientResponse Error. PID: %d\n", pid);
+      exit(0);    /* exit child process */
     }
-    memset(buffer, 0, strlen(buffer));
-    initreq(& req_info);
-    recv(newsocket_fd, buffer, bufsize, 0);
-    parsereq(buffer, & req_info);
-    printf("%s\n", buffer);
-    if (write(newsocket_fd, info[req_info.status], 
-              strlen(info[req_info.status])) != strlen(info[req_info.status])) {
-      fprintf(stderr, "Unable to write %s: %s\n",
-              info[req_info.status], strerror(errno));
-      exit(1);
-    }
-    if (write(newsocket_fd, "\n", 1) != 1) {
-      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-      exit(1);
-    }
-    close(newsocket_fd);
-  }
-  free(buffer);
-  close(socket_fd);
+    else
+      close(newsocket_fd);
+    // sleep(2);
+    // wait(&status);
+ }
 }
