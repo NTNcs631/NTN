@@ -35,4 +35,4 @@ in the UNIX Environment, Fall 2013, SIT.
 
 5. No support for IPv6 
 
-6. Does not handle simultaneous clients, only sequential.
+(Fixed in net.c v1.03)6. Does not handle simultaneous clients, only sequential.
