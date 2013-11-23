@@ -27,14 +27,14 @@ in the UNIX Environment, Fall 2013, SIT.
 
 #### Pending BUGs
 
-(Fixed in main.c v1.02)1. Options Validation Check: dircheck(): closedir()
+1. Options Validation Check: dircheck(): closedir() [Fixed in main.c v1.02]
 
 2. Options Validation Check: still at "rudimentary" stage
 
-(Fixed in net.c v1.04)3. Client~INFO may not be displayed correctly occasionally when using telnet to connect. (Web browser connection behaved better.)
+3. Client~INFO may not be displayed correctly occasionally when using telnet to connect. (Web browser connection behaved better.) [Fixed in net.c v1.04]
 
-(Fixed in main.c v1.02)4. Always show the usage when giving a local direction. (example: ./sws dir)
+4. Always show the usage when giving a local direction. (example: ./sws dir) [Fixed in main.c v1.02]
 
 5. No support for IPv6 
 
-(Fixed in net.c v1.03)6. Does not handle simultaneous clients, only sequential.
+6. Does not handle simultaneous clients, only sequential. [Fixed in net.c v1.03]
