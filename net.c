@@ -92,7 +92,11 @@ clienttimerinit(void)
 {
   struct itimerval value, ovalue;
   /* set signal : Alarm clock */
-  signal(SIGALRM, clienttimer);
+  if (signal(SIGALRM, clienttimer) < 0) {
+    fprintf(stderr, "Fail to set signal: %s\n",
+            strerror(errno));
+    exit(1);
+  }
   value.it_value.tv_sec = 1; 
   value.it_value.tv_usec = 0; 
   value.it_interval.tv_sec = 1; 
@@ -133,7 +137,11 @@ clientresponse(int newsocket_fd)
   
   memset(buffer, 0, strlen((char *)buffer));
   initreq(& req_info);
-  recv(clientsocket_fd, buffer, bufsize, 0);
+  if (recv(clientsocket_fd, buffer, bufsize, 0) < 0) {
+    fprintf(stderr, "Fail to receive: %s\n",
+            strerror(errno));
+    exit(1);
+  }
   parsereq((char *)buffer, & req_info);
 
   printf("-----------------------");
