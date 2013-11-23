@@ -37,9 +37,9 @@
 #include "net.h"
 
 void
-parsereq(char *buffer, ReqInfo * req_info)
+parsereq(char *buffer, ReqInfo *req_info)
 {
-  char * endptr = NULL;
+  char *endptr = NULL;
   int len;
   if (strncmp(buffer, "GET ", 4) == 0) {
     req_info->method = "GET";
@@ -51,7 +51,7 @@ parsereq(char *buffer, ReqInfo * req_info)
   }
   else if (strncmp(buffer, "POST ", 5) == 0) {
     req_info->method = "POST";
-    req_info->status = 12; /* 501 Not Implemented */
+    req_info->status = 12;      /* 501 Not Implemented */
     buffer = buffer + 5;
     return;
   }

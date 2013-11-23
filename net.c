@@ -1,4 +1,4 @@
-/* $NetBSD: net.c,v 1.03 2013/11/20 19:53:33 Weiyu Exp $ */
+/* $NetBSD: net.c,v 1.04 2013/11/22 19:18:13 Weiyu Exp $ */
 /* $NetBSD: net.c,v 1.02 2013/11/19 19:19:10 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
@@ -64,15 +64,24 @@ char *info[17] = {
 };
 
 int
-ClientResponse(int clientsocket_fd)
+clientresponse(int clientsocket_fd)
 {
   int bufsize = 1024;
   char *buffer;
   ReqInfo req_info;
+  socklen_t client_addrlen;
+  struct sockaddr_in client_address;
 
   if ((buffer = (char*)malloc(bufsize*sizeof(char))) == NULL) {
     fprintf(stderr, "Unable to allocate memory: %s\n",
             strerror(errno));
+    return 1;
+  }
+
+  client_addrlen = sizeof(client_address);
+  if (getpeername(clientsocket_fd, (struct sockaddr *) &client_address, &client_addrlen) == -1) {
+    fprintf(stderr, "Get client socket name failed: %s\n",
+      strerror(errno));
     return 1;
   }
   
@@ -80,10 +89,14 @@ ClientResponse(int clientsocket_fd)
   initreq(& req_info);
   recv(clientsocket_fd, buffer, bufsize, 0);
   parsereq(buffer, & req_info);
+
   printf("-----------------------");
-  printf("Client~ INFO");
+  printf(" INFO ");
   printf("-----------------------\n");
+  printf("Clent: %s:%d\n", inet_ntoa(client_address.sin_addr), 
+         ntohs(client_address.sin_port));
   printf("%s\n", buffer);
+
   if (write(clientsocket_fd, info[req_info.status], 
             strlen(info[req_info.status])) != strlen(info[req_info.status])) {
     fprintf(stderr, "Unable to write %s: %s\n",
@@ -121,7 +134,6 @@ startsws(char *i_address, int p_port)
   }
   
   /* SET socket address/host machine/port number */ 
-  // memset(&address, 0, sizeof(address));
   address.sin_family = AF_INET;
   address.sin_addr.s_addr = inet_addr(i_address);
   address.sin_port = htons(p_port);
@@ -164,8 +176,8 @@ startsws(char *i_address, int p_port)
 
     if (pid == 0) {             /* Child Process */
       close(socket_fd);
-      if (ClientResponse(newsocket_fd) > 0)
-        printf("ClientResponse Error. PID: %d\n", pid);
+      if (clientresponse(newsocket_fd) > 0)
+        printf("Client Response Error. PID: %d\n", pid);
       exit(0);    /* exit child process */
     }
     else

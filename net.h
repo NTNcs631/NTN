@@ -36,6 +36,9 @@ typedef struct {
   int status;
 }ReqInfo;
 
-void initreq(ReqInfo *);
+/* Define in net.c */
 void startsws(char*, int);
+
+/* Define in http.c */
+void initreq(ReqInfo *);
 void parsereq(char*, ReqInfo *);
