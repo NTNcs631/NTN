@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 
 #include "net.h"
 
@@ -63,16 +64,61 @@ char *info[17] = {
   "522 Connection Timed Out status"
 };
 
-int
-clientresponse(int clientsocket_fd)
+int clientsocket_fd;
+long total_time = 0;
+#define MAX_TIMEOUT 15
+
+void
+clienttimer(int signal) {
+  total_time ++;
+  if (total_time > MAX_TIMEOUT) {
+    if (write(clientsocket_fd, info[16], 
+              strlen(info[16])) != strlen(info[16])) {
+      fprintf(stderr, "Unable to write %s: %s\n",
+              info[16], strerror(errno));
+      exit(1);
+   }
+    if (write(clientsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      exit(1);
+    }
+	exit(1);
+  }
+  return;
+}
+
+void 
+clienttimerinit(void)
 {
+  struct itimerval value, ovalue;
+  /* set signal : Alarm clock */
+  signal(SIGALRM, clienttimer);
+  value.it_value.tv_sec = 1; 
+  value.it_value.tv_usec = 0; 
+  value.it_interval.tv_sec = 1; 
+  value.it_interval.tv_usec = 0;
+  /* set value of interval timer */
+  if (setitimer(ITIMER_REAL, &value, &ovalue) <0 ) {
+    fprintf(stderr, "Fail to set timer: %s\n",
+            strerror(errno));
+    exit(1);
+  }
+  return ;
+}
+
+int
+clientresponse(int newsocket_fd)
+{
+  clientsocket_fd = newsocket_fd;
   int bufsize = 1024;
-  char *buffer;
+  unsigned char *buffer;
   ReqInfo req_info;
   socklen_t client_addrlen;
   struct sockaddr_in client_address;
 
-  if ((buffer = (char*)malloc(bufsize*sizeof(char))) == NULL) {
+  /* Set a timer to detect timeout */
+  clienttimerinit();
+  if ((buffer = (unsigned char*)malloc(bufsize*sizeof(char))) == NULL) {
     fprintf(stderr, "Unable to allocate memory: %s\n",
             strerror(errno));
     return 1;
@@ -85,10 +131,10 @@ clientresponse(int clientsocket_fd)
     return 1;
   }
   
-  memset(buffer, 0, strlen(buffer));
+  memset(buffer, 0, strlen((char *)buffer));
   initreq(& req_info);
   recv(clientsocket_fd, buffer, bufsize, 0);
-  parsereq(buffer, & req_info);
+  parsereq((char *)buffer, & req_info);
 
   printf("-----------------------");
   printf(" INFO ");
