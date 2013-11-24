@@ -92,14 +92,18 @@ clienttimerinit(void)
 {
   struct itimerval value, ovalue;
   /* set signal : Alarm clock */
-  signal(SIGALRM, clienttimer);
+  if (signal(SIGALRM, clienttimer) < 0) {
+    fprintf(stderr, "Failed to set Alarm Clock signal: %s\n",
+            strerror(errno));
+    exit(1);
+  }
   value.it_value.tv_sec = 1; 
   value.it_value.tv_usec = 0; 
   value.it_interval.tv_sec = 1; 
   value.it_interval.tv_usec = 0;
   /* set value of interval timer */
-  if (setitimer(ITIMER_REAL, &value, &ovalue) <0 ) {
-    fprintf(stderr, "Fail to set timer: %s\n",
+  if (setitimer(ITIMER_REAL, &value, &ovalue) < 0) {
+    fprintf(stderr, "Failed to set timer: %s\n",
             strerror(errno));
     exit(1);
   }
@@ -127,13 +131,17 @@ clientresponse(int newsocket_fd)
   client_addrlen = sizeof(client_address);
   if (getpeername(clientsocket_fd, (struct sockaddr *) &client_address, &client_addrlen) == -1) {
     fprintf(stderr, "Get client socket name failed: %s\n",
-      strerror(errno));
+            strerror(errno));
     return 1;
   }
   
   memset(buffer, 0, strlen((char *)buffer));
   initreq(& req_info);
-  recv(clientsocket_fd, buffer, bufsize, 0);
+  if (recv(clientsocket_fd, buffer, bufsize, 0) < 0) {
+    fprintf(stderr, "Failed to receive Client Request: %s\n",
+            strerror(errno));
+    exit(1);
+  }
   parsereq((char *)buffer, & req_info);
 
   printf("-----------------------");
