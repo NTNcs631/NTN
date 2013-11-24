@@ -92,14 +92,22 @@ clienttimerinit(void)
 {
   struct itimerval value, ovalue;
   /* set signal : Alarm clock */
+<<<<<<< HEAD
+  if (signal(SIGALRM, clienttimer) < 0) {
+    fprintf(stderr, "Failed to set Alarm Clock signal: %s\n",
+            strerror(errno));
+    exit(1);
+  }
+=======
   signal(SIGALRM, clienttimer);
+>>>>>>> parent of af60ebe... Add some check of return value
   value.it_value.tv_sec = 1; 
   value.it_value.tv_usec = 0; 
   value.it_interval.tv_sec = 1; 
   value.it_interval.tv_usec = 0;
   /* set value of interval timer */
   if (setitimer(ITIMER_REAL, &value, &ovalue) <0 ) {
-    fprintf(stderr, "Fail to set timer: %s\n",
+    fprintf(stderr, "Failed to set timer: %s\n",
             strerror(errno));
     exit(1);
   }
@@ -133,7 +141,15 @@ clientresponse(int newsocket_fd)
   
   memset(buffer, 0, strlen((char *)buffer));
   initreq(& req_info);
+<<<<<<< HEAD
+  if (recv(clientsocket_fd, buffer, bufsize, 0) < 0) {
+    fprintf(stderr, "Failed to receive Client Request: %s\n",
+            strerror(errno));
+    exit(1);
+  }
+=======
   recv(clientsocket_fd, buffer, bufsize, 0);
+>>>>>>> parent of af60ebe... Add some check of return value
   parsereq((char *)buffer, & req_info);
 
   printf("-----------------------");
