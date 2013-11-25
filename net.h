@@ -47,5 +47,6 @@ typedef struct {
 void startsws(char*, int);
 
 /* Define in http.c */
+void freereq(ReqInfo *);
 void initreq(ReqInfo *);
 void parsereq(unsigned char*, ReqInfo *);
