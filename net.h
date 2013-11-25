@@ -1,5 +1,5 @@
 /* $NetBSD: net.h,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
-/* $NetBSD: net.h,v 1.02 2013/11/19 19:18:10 Lin Exp $ */
+/* $NetBSD: net.h,v 1.03 2013/11/25 01:26:30 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -29,11 +29,18 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define SIMPLE 0
+#define FULL 1
+#define GET 1
+#define HEAD 2
+#define POST 3
 
 typedef struct {
-  char *method;
   char *resource;
+  char *text;
+  int method;
   int status;
+  int type;
 }ReqInfo;
 
 /* Define in net.c */
@@ -41,4 +48,4 @@ void startsws(char*, int);
 
 /* Define in http.c */
 void initreq(ReqInfo *);
-void parsereq(char*, ReqInfo *);
+void parsereq(unsigned char*, ReqInfo *);
