@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.04 2013/11/22 19:18:13 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.06 2013/11/25 01:27:13 Lin Exp $ */
+/* $NetBSD: net.c,v 1.07 2013/11/25 14:33:32 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -168,7 +168,7 @@ clientresponse(int newsocket_fd)
   }
   // close(clientsocket_fd);
   free(buffer);
-
+  freereq(& req_info);
   return 0;    
 }
 
