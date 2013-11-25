@@ -1,5 +1,5 @@
 /* $NetBSD: net.h,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
-/* $NetBSD: net.h,v 1.03 2013/11/25 01:26:30 Lin Exp $ */
+/* $NetBSD: net.h,v 1.04 2013/11/25 14:31:22 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -48,4 +48,5 @@ void startsws(char*, int);
 
 /* Define in http.c */
 void initreq(ReqInfo *);
+void freereq(ReqInfo *);
 void parsereq(unsigned char*, ReqInfo *);
