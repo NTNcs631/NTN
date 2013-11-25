@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.04 2013/11/22 19:18:13 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.02 2013/11/19 19:19:10 Lin Exp $ */
+/* $NetBSD: net.c,v 1.06 2013/11/25 01:27:13 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -44,7 +44,7 @@
 
 #include "net.h"
 
-char *info[17] = {
+char *info[18] = {
   "200 OK",
   "201 Created",
   "202 Accepted",
@@ -61,7 +61,8 @@ char *info[17] = {
   "502 Bad Gateway",
   "503 Service Unavailable",
   "505 Version Not Supported",
-  "522 Connection Timed Out status"
+  "522 Connection Timed Out status",
+  "[Entity-Body](only for test)"
 };
 
 int clientsocket_fd;
@@ -135,21 +136,25 @@ clientresponse(int newsocket_fd)
     return 1;
   }
   
-  memset(buffer, 0, strlen((char *)buffer));
   initreq(& req_info);
-  if (recv(clientsocket_fd, buffer, bufsize, 0) < 0) {
-    fprintf(stderr, "Failed to receive Client Request: %s\n",
-            strerror(errno));
-    exit(1);
-  }
-  parsereq((char *)buffer, & req_info);
-
+  do {
+    memset(buffer, 0, strlen((char *)buffer));
+    if (recv(clientsocket_fd, buffer, bufsize, 0) < 0) {
+      fprintf(stderr, "Failed to receive Client Request: %s\n",
+              strerror(errno));
+      exit(1);
+    }
+    total_time = 0;
+    parsereq(buffer, & req_info);
+  } while(req_info.type != SIMPLE && req_info.status != 7 && buffer[1] != '\n');
+  
   printf("-----------------------");
   printf(" INFO ");
   printf("-----------------------\n");
   printf("Clent: %s:%d\n", inet_ntoa(client_address.sin_addr), 
          ntohs(client_address.sin_port));
-  printf("%s\n", buffer);
+  if (req_info.text)
+    printf("%s\n", req_info.text);
 
   if (write(clientsocket_fd, info[req_info.status], 
             strlen(info[req_info.status])) != strlen(info[req_info.status])) {

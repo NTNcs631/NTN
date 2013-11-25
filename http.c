@@ -1,4 +1,4 @@
-/* $NetBSD: http.c,v 1.00 2013/11/19 19:18:10 Lin Exp $ */
+/* $NetBSD: http.c,v 1.01 2013/11/25 01:26:12 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -37,22 +37,37 @@
 #include "net.h"
 
 void
-parsereq(char *buffer, ReqInfo *req_info)
+parsereq(unsigned char *buffer, ReqInfo *req_info)
 {
   char *endptr = NULL;
   int len;
-  if (strncmp(buffer, "GET ", 4) == 0) {
-    req_info->method = "GET";
+  if (buffer[1] == '\n')
+    return; 
+  if (req_info->text)
+    strcat(req_info->text, (char*)buffer);
+  else {
+    len = strlen((char*)buffer);
+    if ((req_info->text = (char*)malloc((len+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      exit(1);
+    }
+    strcpy(req_info->text, (char*)buffer);
+  }
+  if (req_info->type == FULL)
+    return;
+  if (strncmp((char*)buffer, "GET ", 4) == 0) {
+    req_info->method = GET;
     buffer = buffer + 4;
   }
-  else if (strncmp(buffer, "HEAD ", 5) == 0) {
-    req_info->method = "HEAD";
+  else if (strncmp((char*)buffer, "HEAD ", 5) == 0) {
+    req_info->method = HEAD;
     buffer = buffer + 5;
   }
-  else if (strncmp(buffer, "POST ", 5) == 0) {
-    req_info->method = "POST";
-    req_info->status = 12;      /* 501 Not Implemented */
+  else if (strncmp((char*)buffer, "POST ", 5) == 0) {
+    req_info->method = POST;
     buffer = buffer + 5;
+    req_info->status = 12;      /* 501 Not Implemented */
     return;
   }
   else {
@@ -61,29 +76,57 @@ parsereq(char *buffer, ReqInfo *req_info)
   }
   while (*buffer && isspace(*buffer))
     buffer++;
-  endptr = strchr(buffer, ' ');
+  endptr = strchr((char*)buffer, ' ');
   if (endptr == NULL) {
+    req_info->type = SIMPLE;
+    len = strlen((char*)buffer);
+  }
+  else
+    len = endptr - (char*)buffer;
+  if (len == 0) {
     req_info->status = 7;       /* 400 Bad Request */
     return;
   }
-  else
-    len = endptr - buffer;
   if ((req_info->resource = (char*)malloc((len+1)*sizeof(char))) == NULL) {
     fprintf(stderr, "Unable to allocate memory: %s\n",
             strerror(errno));
     exit(1);
   }
-  strncpy(req_info->resource, buffer, len);
+  strncpy(req_info->resource, (char*)buffer, len);
+  if (req_info->type == SIMPLE) {
+    if (req_info->method == GET) {
+      req_info->status = 17;       /* simple response, now it is a test index */
+      return;
+    }
+	else{
+      req_info->status = 7;       /* 400 Bad Request */
+      return;
+    }
+  }
   buffer = buffer + len;
   while (*buffer && isspace(*buffer))
     buffer++;
-  if (strncmp(buffer, "HTTP/", 5) == 0) {
+  if (strncmp((char*)buffer, "HTTP/", 5) == 0) {
     buffer = buffer + 5;
-    if (strncmp(buffer, "1.0", 3) == 0) {
+    if (strncmp((char*)buffer, "1.0", 3) == 0) {
+      req_info->type = FULL;
       req_info->status = 0;   /* 200 OK */
       return;
     }
+    else if (strncmp((char*)buffer, "0.9", 3) == 0) {
+      req_info->type = SIMPLE;
+      if (req_info->method == GET) {
+        req_info->status = 17;     /* simple response, now it is a test index */
+        return;
+      }
+	  else {
+        req_info->status = 7;     /* 400 Bad Request */
+        return;
+      }
+    }
     else {
+      /* Here is a trick, set the type SIMPLE to get out of the while loop in net.c*/
+      req_info->type = SIMPLE; 
       req_info->status = 15;  /* 505 Version Not Supported */
       return;
     }
@@ -99,7 +142,9 @@ parsereq(char *buffer, ReqInfo *req_info)
 void
 initreq(ReqInfo * req_info)
 {
-  req_info->method = NULL;
   req_info->resource = NULL;
-  req_info->status = -1;
+  req_info->text = NULL;
+  req_info->method = 0;
+  req_info->status = 7;
+  req_info->type = -1;
 }
