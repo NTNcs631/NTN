@@ -114,15 +114,8 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
       return;
     }
     else if (strncmp((char*)buffer, "0.9", 3) == 0) {
-      req_info->type = SIMPLE;
-      if (req_info->method == GET) {
-        req_info->status = 17;     /* simple response, now it is a test index */
-        return;
-      }
-	  else {
-        req_info->status = 7;     /* 400 Bad Request */
-        return;
-      }
+      req_info->type = FULL;
+      req_info->status = 0;   /* 200 OK */
     }
     else {
       /* Here is a trick, set the type SIMPLE to get out of the while loop in net.c*/
@@ -147,4 +140,13 @@ initreq(ReqInfo * req_info)
   req_info->method = 0;
   req_info->status = 7;
   req_info->type = -1;
+}
+
+void
+freereq(ReqInfo * req_info)
+{
+  if (req_info->resource)
+    free(req_info->resource);
+  if (req_info->text)
+    free(req_info->text);
 }
