@@ -168,7 +168,7 @@ clientresponse(int newsocket_fd)
   }
   // close(clientsocket_fd);
   free(buffer);
-
+  freereq(& req_info);
   return 0;    
 }
 
