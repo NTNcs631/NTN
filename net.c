@@ -1,4 +1,4 @@
-/* $NetBSD: net.c,v 1.04 2013/11/22 19:18:13 Weiyu Exp $ */
+/* $NetBSD: net.c,v 1.07 2013/11/25 22:42:00 Weiyu Exp $ */
 /* $NetBSD: net.c,v 1.06 2013/11/25 01:27:13 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
@@ -119,7 +119,8 @@ clientresponse(int newsocket_fd)
   unsigned char *buffer;
   ReqInfo req_info;
   socklen_t client_addrlen;
-  struct sockaddr_in client_address;
+  struct sockaddr_storage client_address;
+  char ipstr[INET6_ADDRSTRLEN];
 
   /* Set a timer to detect timeout */
   clienttimerinit();
@@ -129,6 +130,7 @@ clientresponse(int newsocket_fd)
     return 1;
   }
 
+  /* Get Client IP Address */
   client_addrlen = sizeof(client_address);
   if (getpeername(clientsocket_fd, (struct sockaddr *) &client_address, &client_addrlen) == -1) {
     fprintf(stderr, "Get client socket name failed: %s\n",
@@ -136,6 +138,7 @@ clientresponse(int newsocket_fd)
     return 1;
   }
   
+  /* HTTP0.9/1.0 */
   initreq(& req_info);
   do {
     memset(buffer, 0, strlen((char *)buffer));
@@ -152,8 +155,23 @@ clientresponse(int newsocket_fd)
   printf("\n-----------------------");
   printf(" INFO ");
   printf("-----------------------\n");
-  printf("Clent: %s:%d\n", inet_ntoa(client_address.sin_addr), 
-         ntohs(client_address.sin_port));
+  
+  /* Client Info */
+  if (client_address.ss_family == AF_INET) {
+    struct sockaddr_in *addr = (struct sockaddr_in *)&client_address;
+
+    printf("Client: %s:%d\n", 
+           inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof ipstr), 
+           ntohs(addr->sin_port));
+  } else { // AF_INET6
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&client_address;
+
+    printf("Client: %s:%d\n", 
+           inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof ipstr), 
+           ntohs(addr->sin6_port));
+}
+
+  /* HTTP0.9/1.0 */
   if (req_info.text)
     printf("%s\n", req_info.text);
 
