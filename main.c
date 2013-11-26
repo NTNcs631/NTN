@@ -44,7 +44,8 @@
  */
 
 int flag_d = 0; 
-int flag_h = 0; 
+int flag_h = 0;
+int flag_host_ipv6 = 0;
 
 /*
  * Functions
@@ -86,12 +87,16 @@ ipcheck(char *i_address)
 {
   unsigned char buf[sizeof(struct in6_addr)];
 
-  if (inet_pton(AF_INET6, i_address, buf) == 1)
+  if (inet_pton(AF_INET6, i_address, buf) == 1) {
     /* IPv6 */
+    flag_host_ipv6 = 1;
     return 0;
-  else if (inet_pton(AF_INET, i_address, buf) == 1)
+  }
+  else if (inet_pton(AF_INET, i_address, buf) == 1) {
     /* IPv4 */
+    /* Default: flag_host_ipv6 = 0; */
     return 0;
+  }
   else {
     fprintf(stderr, "IP address not valid: %s\n", i_address);
     return 1;
@@ -177,7 +182,7 @@ main(int argc, char *argv[])
 
     case 'p':
       p_port = atoi(optarg);
-	  if (portcheck(p_port))
+    if (portcheck(p_port))
         exit(EXIT_FAILURE);
       break;
 
@@ -212,8 +217,7 @@ main(int argc, char *argv[])
   // if (c_dir != NULL)
   //   dircheck(c_dir);
 
-
-  startsws(i_address, p_port);
+  startsws(i_address, p_port, flag_host_ipv6);
 
   return 0;
 }
