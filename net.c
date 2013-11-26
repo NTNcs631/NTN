@@ -192,41 +192,85 @@ clientresponse(int newsocket_fd)
 }
 
 void
-startsws(char *i_address, int p_port)
+startsws(char *i_address, int p_port, int flag_host_ipv6)
 {    
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
-  struct sockaddr_in address;
   pid_t pid;
+  struct sockaddr_in address;
+  struct sockaddr_in6 address6;
   // int status;
  
   printf("\n-----------Starting Sever-----------\n");
-  if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
-    printf("Socket created: %d\n", socket_fd);
-    printf("Binding socket ...\n");
+  /* 
+   * Some IPv6 socket cannot turn off IPV6_V6ONLY, 
+   * so set them separately.
+   */
+  if (flag_host_ipv6) {
+    /* socket: IPv6 */
+    if ((socket_fd = socket(AF_INET6, SOCK_STREAM, 0)) > 0) {
+      printf("Socket created: %d\n", socket_fd);
+      printf("Binding socket ...\n");
+    }
+    else {
+      fprintf(stderr, "Unable to create socket: %s\n",
+              strerror(errno));
+      exit (1);
+    }
   }
   else {
-    fprintf(stderr, "Unable to create socket: %s\n",
-            strerror(errno));
-    exit (1);
+    /* socket: IPv4 */
+    if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) > 0) {
+      printf("Socket created: %d\n", socket_fd);
+      printf("Binding socket ...\n");
+    }
+    else {
+      fprintf(stderr, "Unable to create socket: %s\n",
+              strerror(errno));
+      exit (1);
+    }
   }
   
   /* SET socket address/host machine/port number */ 
-  address.sin_family = AF_INET;
-  address.sin_addr.s_addr = inet_addr(i_address);
-  address.sin_port = htons(p_port);
-
-  if (bind(socket_fd, (struct sockaddr *) &address, 
-          sizeof(address)) == 0) {
-    printf("Socket Binding Completed:\nSocket: %d | Port: %d | Address: %s \n\n",
-           socket_fd, p_port, i_address);
+  if (flag_host_ipv6) {
+    /* i_address: IPv6 format */
+    (void)inet_pton(AF_INET6, i_address, address6.sin6_addr.s6_addr);
+    address6.sin6_family = AF_INET6;
+    address6.sin6_port = htons(p_port);
   }
   else {
-    fprintf(stderr, "Unable to create bind %d: %s\n",
-            socket_fd, strerror(errno));
-    exit (1);
+    /* i_address: IPv4 format */
+    address.sin_addr.s_addr = inet_addr(i_address);
+    address.sin_family = AF_INET;
+    address.sin_port = htons(p_port);
   }
 
+  if (flag_host_ipv6) {
+    /* IPv6 Host */
+    if (bind(socket_fd, (struct sockaddr *) &address6, 
+            sizeof(address6)) == 0) {
+      printf("Socket Binding Completed:\nSocket: %d | Port: %d | Address: %s \n\n",
+             socket_fd, p_port, i_address);
+    }
+    else {
+      fprintf(stderr, "Unable to create bind %d: %s\n",
+              socket_fd, strerror(errno));
+      exit (1);
+    }
+  }
+  else {
+    /* IPv4 Host */
+    if (bind(socket_fd, (struct sockaddr *) &address, 
+            sizeof(address)) == 0) {
+      printf("Socket Binding Completed:\nSocket: %d | Port: %d | Address: %s \n\n",
+             socket_fd, p_port, i_address);
+    }
+    else {
+      fprintf(stderr, "Unable to create bind %d: %s\n",
+              socket_fd, strerror(errno));
+      exit (1);
+    }
+  }
   /* 
    * Listen on the socket for connections.
    */
@@ -240,12 +284,20 @@ startsws(char *i_address, int p_port)
     /* 
      * Block process until a client connects to the server. 
      */   
-    if ((newsocket_fd=accept(socket_fd, (struct sockaddr *) &address,
-                          &addrlen)) < 0) {    
-      perror("server: accept");    
-      exit(1);
+    if (flag_host_ipv6) {
+      if ((newsocket_fd=accept(socket_fd, (struct sockaddr *) &address6,
+                            &addrlen)) < 0) {    
+        perror("server: accept");    
+        exit(1);
+      }
     }
-
+    else {
+      if ((newsocket_fd=accept(socket_fd, (struct sockaddr *) &address,
+                            &addrlen)) < 0) {    
+        perror("server: accept");    
+        exit(1);
+      }
+    }
     /*
      * Client Connection Response
      */
