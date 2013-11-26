@@ -1,4 +1,4 @@
-/* $NetBSD: main.c,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
+/* $NetBSD: main.c,v 1.03 2013/11/25 22:42:00 Weiyu Exp $ */
 /* $NetBSD: main.c,v 1.02 2013/11/15 23:39:10 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
@@ -44,7 +44,8 @@
  */
 
 int flag_d = 0; 
-int flag_h = 0; 
+int flag_h = 0;
+int flag_host_ipv6 = 0;
 
 /*
  * Functions
@@ -79,19 +80,27 @@ dircheck(char *dir)
     fprintf(stderr, "Not a directory: %s\n", dir);
     return 1;
   }
-
-  // closedir(dir);
 }
 
 int
-ipcheck(char *ip)
+ipcheck(char *i_address)
 {
-  if (inet_addr(ip)==INADDR_NONE) {
-    fprintf(stderr, "IP address not valid: %s\n", ip);
+  unsigned char buf[sizeof(struct in6_addr)];
+
+  if (inet_pton(AF_INET6, i_address, buf) == 1) {
+    /* IPv6 */
+    flag_host_ipv6 = 1;
+    return 0;
+  }
+  else if (inet_pton(AF_INET, i_address, buf) == 1) {
+    /* IPv4 */
+    /* Default: flag_host_ipv6 = 0; */
+    return 0;
+  }
+  else {
+    fprintf(stderr, "IP address not valid: %s\n", i_address);
     return 1;
   }
-  else
-    return 0;
 }
 
 int
@@ -173,7 +182,7 @@ main(int argc, char *argv[])
 
     case 'p':
       p_port = atoi(optarg);
-	  if (portcheck(p_port))
+    if (portcheck(p_port))
         exit(EXIT_FAILURE);
       break;
 
@@ -190,6 +199,12 @@ main(int argc, char *argv[])
   //sws_dir = argv[0];
   else
     usage();
+
+  if (!IPv6) {
+    printf("Host environment does not support IPv6.");
+    exit(EXIT_FAILURE);
+  }
+
   if (dircheck(sws_dir))
     exit(EXIT_FAILURE);
 
@@ -202,8 +217,7 @@ main(int argc, char *argv[])
   // if (c_dir != NULL)
   //   dircheck(c_dir);
 
-
-  startsws(i_address, p_port);
+  startsws(i_address, p_port, flag_host_ipv6);
 
   return 0;
 }
