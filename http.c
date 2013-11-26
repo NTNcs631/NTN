@@ -39,12 +39,22 @@
 void
 parsereq(unsigned char *buffer, ReqInfo *req_info)
 {
-  char *endptr = NULL;
+  char *endptr = NULL, *tmp;
   int len;
   if (buffer[1] == '\n')
     return; 
-  if (req_info->text)
-    strcat(req_info->text, (char*)buffer);
+  if (req_info->text) {
+    len = strlen((char *)buffer);
+    if ((tmp = malloc((len+strlen(req_info->text)+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      exit(1);
+    }
+    strcpy(tmp,req_info->text);
+    strcat(tmp, (char*)buffer);
+    free (req_info->text);
+    req_info->text = tmp;
+  }
   else {
     len = strlen((char*)buffer);
     if ((req_info->text = (char*)malloc((len+1)*sizeof(char))) == NULL) {
