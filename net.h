@@ -1,4 +1,4 @@
-/* $NetBSD: net.h,v 1.01 2013/11/15 13:40:40 Weiyu Exp $ */
+/* $NetBSD: net.h,v 1.04 2013/11/25 22:42:00 Weiyu Exp $ */
 /* $NetBSD: net.h,v 1.03 2013/11/25 01:26:30 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
@@ -34,6 +34,12 @@
 #define GET 1
 #define HEAD 2
 #define POST 3
+
+#ifdef AF_INET6
+  #define IPv6 1
+#else 
+  #define IPv6 0
+#endif
 
 typedef struct {
   char *resource;
