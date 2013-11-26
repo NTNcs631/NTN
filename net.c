@@ -146,9 +146,10 @@ clientresponse(int newsocket_fd)
     }
     total_time = 0;
     parsereq(buffer, & req_info);
-  } while(req_info.type != SIMPLE && req_info.status != 7 && buffer[1] != '\n');
+  } while(req_info.type != SIMPLE && req_info.status != 7 &&
+          buffer[0] != '\n' && buffer[0] != '\r');
   
-  printf("-----------------------");
+  printf("\n-----------------------");
   printf(" INFO ");
   printf("-----------------------\n");
   printf("Clent: %s:%d\n", inet_ntoa(client_address.sin_addr), 
