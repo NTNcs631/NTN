@@ -1,4 +1,4 @@
-/* $NetBSD: http.c,v 1.01 2013/11/25 01:26:12 Lin Exp $ */
+/* $NetBSD: http.c,v 1.02 2013/11/26 23:05:22 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -89,7 +89,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
   endptr = strchr((char*)buffer, ' ');
   if (endptr == NULL) {
     req_info->type = SIMPLE;
-    len = strlen((char*)buffer);
+    len = strlen((char*)buffer)-2; /* not include \r\n */
   }
   else
     len = endptr - (char*)buffer;
@@ -103,9 +103,14 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
     exit(1);
   }
   strncpy(req_info->resource, (char*)buffer, len);
-  if (req_info->type == SIMPLE) {
+  req_info->resource[len] = '\0';
+  buffer = buffer + len;
+  while (*buffer && isspace(*buffer))
+    buffer++;
+  if (!*buffer) {
+    req_info->type = SIMPLE;
     if (req_info->method == GET) {
-      req_info->status = 17;       /* simple response, now it is a test index */
+      req_info->status = 17;       /* simple response */
       return;
     }
 	else{
@@ -113,9 +118,6 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
       return;
     }
   }
-  buffer = buffer + len;
-  while (*buffer && isspace(*buffer))
-    buffer++;
   if (strncmp((char*)buffer, "HTTP/", 5) == 0) {
     buffer = buffer + 5;
     if (strncmp((char*)buffer, "1.0", 3) == 0) {
@@ -128,8 +130,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
       req_info->status = 0;   /* 200 OK */
     }
     else {
-      /* Here is a trick, set the type SIMPLE to get out of the while loop in net.c*/
-      req_info->type = SIMPLE; 
+      req_info->type = FULL; 
       req_info->status = 15;  /* 505 Version Not Supported */
       return;
     }
