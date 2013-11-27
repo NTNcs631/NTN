@@ -1,5 +1,5 @@
 /* $NetBSD: net.h,v 1.04 2013/11/25 22:42:00 Weiyu Exp $ */
-/* $NetBSD: net.h,v 1.03 2013/11/25 01:26:30 Lin Exp $ */
+/* $NetBSD: net.h,v 1.05 2013/11/26 23:03:33 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -50,7 +50,8 @@ typedef struct {
 }ReqInfo;
 
 /* Define in net.c */
-void startsws(char*, int, int);
+void startsws(void);
+int clientwrite(int, ReqInfo *);
 
 /* Define in http.c */
 void freereq(ReqInfo *);
