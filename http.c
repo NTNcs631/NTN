@@ -36,6 +36,24 @@
 
 #include "net.h"
 
+#define OK 0
+#define CREATED 1
+#define ACCEPTED 2
+#define No_CONTENT 3
+#define MOVED_PERMANENTLY 4
+#define MOVED_TEMPORARILY 5
+#define NOT_MODIFIED 6
+#define BAD_REQUEST 7
+#define UNAUTHORIZED 8
+#define FORBIDDEN 9
+#define NOT_FOUND 10
+#define INTERNAL_SERVER_ERROR 11
+#define NOT_IMPLEMENTED 12
+#define BAD_GATEWAY 13
+#define SERVICE_UNAVAILABLE 14
+#define VERSION_NOT_SUPPORTED 15
+#define TIME_OUT 16
+
 void
 parsereq(unsigned char *buffer, ReqInfo *req_info)
 {
@@ -77,11 +95,11 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
   else if (strncmp((char*)buffer, "POST ", 5) == 0) {
     req_info->method = POST;
     buffer = buffer + 5;
-    req_info->status = 12;      /* 501 Not Implemented */
+    req_info->status = NOT_IMPLEMENTED;      /* 501 Not Implemented */
     return;
   }
   else {
-    req_info->status = 7;       /* 400 Bad Request */
+    req_info->status = BAD_REQUEST;       /* 400 Bad Request */
     return;
   }
   while (*buffer && isspace(*buffer))
@@ -94,7 +112,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
   else
     len = endptr - (char*)buffer;
   if (len == 0) {
-    req_info->status = 7;       /* 400 Bad Request */
+    req_info->status = BAD_REQUEST;       /* 400 Bad Request */
     return;
   }
   if ((req_info->resource = (char*)malloc((len+1)*sizeof(char))) == NULL) {
@@ -114,7 +132,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
       return;
     }
 	else{
-      req_info->status = 7;       /* 400 Bad Request */
+      req_info->status = BAD_REQUEST;       /* 400 Bad Request */
       return;
     }
   }
@@ -127,16 +145,16 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
     }
     else if (strncmp((char*)buffer, "0.9", 3) == 0) {
       req_info->type = FULL;
-      req_info->status = 0;   /* 200 OK */
+      req_info->status = OK;   /* 200 OK */
     }
     else {
       req_info->type = FULL; 
-      req_info->status = 15;  /* 505 Version Not Supported */
+      req_info->status = VERSION_NOT_SUPPORTED;  /* 505 Version Not Supported */
       return;
     }
   }
   else {
-    req_info->status = 7;     /* 400 Bad Request */
+    req_info->status = BAD_REQUEST;     /* 400 Bad Request */
     return;
   }
   /* Not reached */
