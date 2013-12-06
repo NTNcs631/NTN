@@ -1,5 +1,5 @@
 /* $NetBSD: main.c,v 1.03 2013/11/25 22:42:00 Weiyu Exp $ */
-/* $NetBSD: main.c,v 1.02 2013/11/15 23:39:10 Lin Exp $ */
+/* $NetBSD: main.c,v 1.04 2013/11/26 23:01:11 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -46,6 +46,12 @@
 int flag_d = 0; 
 int flag_h = 0;
 int flag_host_ipv6 = 0;
+int p_port = 8080;
+char *c_dir=NULL;
+char *l_file=NULL;
+char *sws_dir=NULL;
+char *i_address = "0.0.0.0";
+
 
 /*
  * Functions
@@ -146,9 +152,6 @@ int
 main(int argc, char *argv[])
 {
   int ch;
-  char *c_dir=NULL, *l_file=NULL, *sws_dir=NULL,
-       *i_address = "0.0.0.0";
-  int p_port = 8080;
 
   // printf("argc: %d  argv: %s\n", argc, *argv);
 
@@ -217,7 +220,7 @@ main(int argc, char *argv[])
   // if (c_dir != NULL)
   //   dircheck(c_dir);
 
-  startsws(i_address, p_port, flag_host_ipv6);
+  startsws();
 
   return 0;
 }

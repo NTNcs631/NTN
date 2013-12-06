@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.07 2013/11/25 22:42:00 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.06 2013/11/25 01:27:13 Lin Exp $ */
+/* $NetBSD: net.c,v 1.08 2013/11/25 23:08:33 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -41,6 +41,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/time.h>
+#include <fcntl.h>
 
 #include "net.h"
 
@@ -62,12 +63,20 @@ char *info[18] = {
   "503 Service Unavailable",
   "505 Version Not Supported",
   "522 Connection Timed Out status",
-  "[Entity-Body](only for test)"
+  ""                          /* HTTP 0.9 void respond text*/
 };
+
+extern int flag_host_ipv6;
+extern int p_port;
+extern char *c_dir;
+extern char *sws_dir;
+extern char *i_address;
 
 int clientsocket_fd;
 long total_time = 0;
+
 #define MAX_TIMEOUT 15
+#define BUFFSIZE 64
 
 void
 clienttimer(int signal) {
@@ -174,25 +183,80 @@ clientresponse(int newsocket_fd)
   /* HTTP0.9/1.0 */
   if (req_info.text)
     printf("%s\n", req_info.text);
-
-  if (write(clientsocket_fd, info[req_info.status], 
-            strlen(info[req_info.status])) != strlen(info[req_info.status])) {
-    fprintf(stderr, "Unable to write %s: %s\n",
-            info[req_info.status], strerror(errno));
+  if (clientwrite(clientsocket_fd, & req_info))
     return 1;
-  }
-  if (write(clientsocket_fd, "\n", 1) != 1) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
   // close(clientsocket_fd);
   free(buffer);
   freereq(& req_info);
   return 0;    
 }
 
+int
+clientwrite(int clientsocket_fd, ReqInfo * req_info)
+{
+  int clientsource_fd, n;
+  char *pathname;
+  char buf[BUFFSIZE];
+  if (req_info->status == 0 || req_info->status == 17) {
+    if (strcmp(req_info->resource,"/") == 0) {
+      free (req_info->resource);
+      req_info->resource = "/index.html";
+    }
+    if ((pathname = (char*)malloc((strlen(sws_dir)+
+                                   strlen(req_info->resource)+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return 1;
+    }
+    strcpy(pathname, sws_dir);
+    strcat(pathname, req_info->resource);
+    if ((clientsource_fd = open(pathname,O_RDONLY)) == -1)
+      switch (errno) {
+	  case EACCES:
+        req_info->status = 9;  /* 403 Forbidden */
+        break;
+	  case ENOENT:
+        req_info->status = 10; /* 404 Not Found */
+        break;
+      default:
+        req_info->status = 10; /* 404 Not Found(temporary) */
+        break;
+      }
+  }
+  if (write(clientsocket_fd, info[req_info->status], 
+            strlen(info[req_info->status])) != strlen(info[req_info->status])) {
+    fprintf(stderr, "Unable to write %s: %s\n",
+            info[req_info->status], strerror(errno));
+    return 1;
+  }
+  if (write(clientsocket_fd, "\n", 1) != 1) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return 1;
+  }
+  switch (req_info->status) {
+  case 0:    /* "200 OK" */
+  case 17:   /* HTTP 0.9 simple request*/
+    switch (req_info->method) {
+    case GET:
+      while ((n = read(clientsource_fd, buf, BUFFSIZE)) > 0) {
+        if (write(clientsocket_fd, buf, n) != n) {
+          fprintf(stderr, "Unable to write: %s\n",
+                  strerror(errno));
+          return 1;
+        }
+      }
+	  return 0;
+      break;
+/*	case HEAD:  */
+/*	case POST:  */
+    }
+    break;
+  }
+  return 0;
+}
+
 void
-startsws(char *i_address, int p_port, int flag_host_ipv6)
+startsws(void)
 {    
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
