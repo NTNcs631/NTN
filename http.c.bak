@@ -95,11 +95,11 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
   else if (strncmp((char*)buffer, "POST ", 5) == 0) {
     req_info->method = POST;
     buffer = buffer + 5;
-    req_info->status = NOT_IMPLEMENTED;      /* 501 Not Implemented */
+    req_info->status = 12;      /* 501 Not Implemented */
     return;
   }
   else {
-    req_info->status = BAD_REQUEST;       /* 400 Bad Request */
+    req_info->status = 7;       /* 400 Bad Request */
     return;
   }
   while (*buffer && isspace(*buffer))
@@ -112,7 +112,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
   else
     len = endptr - (char*)buffer;
   if (len == 0) {
-    req_info->status = BAD_REQUEST;       /* 400 Bad Request */
+    req_info->status = 7;       /* 400 Bad Request */
     return;
   }
   if ((req_info->resource = (char*)malloc((len+1)*sizeof(char))) == NULL) {
@@ -132,7 +132,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
       return;
     }
 	else{
-      req_info->status = BAD_REQUEST;       /* 400 Bad Request */
+      req_info->status = 7;       /* 400 Bad Request */
       return;
     }
   }
@@ -145,16 +145,16 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
     }
     else if (strncmp((char*)buffer, "0.9", 3) == 0) {
       req_info->type = FULL;
-      req_info->status = OK;   /* 200 OK */
+      req_info->status = 0;   /* 200 OK */
     }
     else {
       req_info->type = FULL; 
-      req_info->status = VERSION_NOT_SUPPORTED;  /* 505 Version Not Supported */
+      req_info->status = 15;  /* 505 Version Not Supported */
       return;
     }
   }
   else {
-    req_info->status = BAD_REQUEST;     /* 400 Bad Request */
+    req_info->status = 7;     /* 400 Bad Request */
     return;
   }
   /* Not reached */

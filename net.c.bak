@@ -62,7 +62,7 @@ char *info[18] = {
   "502 Bad Gateway",
   "503 Service Unavailable",
   "505 Version Not Supported",
-  "522 Connection Timed Out Status",
+  "522 Connection Timed Out status",
   ""                          /* HTTP 0.9 void respond text*/
 };
 

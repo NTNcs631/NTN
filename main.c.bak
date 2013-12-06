@@ -197,12 +197,6 @@ main(int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
-  if (flag_h)
-  {
-	  usuage();
-	  return 0;
-  }
-
   if (argc==1)
     sws_dir = *argv;
   //sws_dir = argv[0];
