@@ -27,14 +27,22 @@ in the UNIX Environment, Fall 2013, SIT.
 
 #### Pending BUGs
 
-1. Options Validation Check: dircheck(): closedir() [Fixed in main.c v1.02]
+1. [x] Options Validation Check: dircheck(): closedir() [Fixed in main.c v1.02]
 
-2. Options Validation Check: still at "rudimentary" stage
+2. [ ] Options Validation Check: still at "rudimentary" stage
 
-3. Client~INFO may not be displayed correctly occasionally when using telnet to connect. (Web browser connection behaved better.) [Fixed in net.c v1.04]
+3. [x] Client~INFO may not be displayed correctly occasionally when using telnet to connect. (Web browser connection behaved better.) [Fixed in net.c v1.04]
 
-4. Always show the usage when giving a local direction. (example: ./sws dir) [Fixed in main.c v1.02]
+4. [x] Always show the usage when giving a local direction. [x] (example: ./sws dir) [Fixed in main.c v1.02]
 
-5. No support for IPv6 
+5. [x] No support for IPv6 [Fixed in net.c 1.07]
 
-6. Does not handle simultaneous clients, only sequential. [Fixed in net.c v1.03]
+6. [x] Does not handle simultaneous clients, only sequential. [Fixed in net.c v1.03]
+
+7. [ ] Yields 400 for unknown requests (should be not-implemented).
+
+8. [x] By default only binds on IPv4. (Fixed in patch Dec6/2013).
+
+9. [ ] Magic numbers on request status code define.
+
+10. [ ] Memory mapping error for "Get / HTTP/1.0".
