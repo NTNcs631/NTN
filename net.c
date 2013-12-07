@@ -170,13 +170,13 @@ clientresponse(int newsocket_fd)
     struct sockaddr_in *addr = (struct sockaddr_in *)&client_address;
 
     printf("Client: %s:%d\n", 
-           inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof ipstr), 
+           inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof(ipstr)), 
            ntohs(addr->sin_port));
   } else { // AF_INET6
     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&client_address;
 
     printf("Client: %s:%d\n", 
-           inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof ipstr), 
+           inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof(ipstr)), 
            ntohs(addr->sin6_port));
 }
 
