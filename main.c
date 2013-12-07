@@ -46,11 +46,6 @@
 int flag_d = 0; 
 int flag_h = 0;
 int flag_host_ipv6 = 1;
-int p_port = 8080;
-char *c_dir=NULL;
-char *l_file=NULL;
-char *sws_dir=NULL;
-char *i_address = "::1";
 
 
 /*
@@ -152,9 +147,12 @@ int
 main(int argc, char *argv[])
 {
   int ch;
-
+  int p_port = 8080;
+  char *c_dir=NULL;
+  char *l_file=NULL;
+  char *sws_dir=NULL;
+  char *i_address = "::1";
   // printf("argc: %d  argv: %s\n", argc, *argv);
-
   while ((ch = getopt(argc, argv, "dhc:i:l:p:")) != -1) {
     switch (ch) {
     case 'd':
@@ -226,7 +224,7 @@ main(int argc, char *argv[])
   // if (c_dir != NULL)
   //   dircheck(c_dir);
 
-  startsws();
+    startsws(i_address, p_port, sws_dir, flag_host_ipv6);
 
   return 0;
 }

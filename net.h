@@ -50,8 +50,8 @@ typedef struct {
 }ReqInfo;
 
 /* Define in net.c */
-void startsws(void);
-int clientwrite(int, ReqInfo *);
+void startsws(char *, int, char *, int);
+int clientwrite(int, ReqInfo *, char *);
 
 /* Define in http.c */
 void freereq(ReqInfo *);
