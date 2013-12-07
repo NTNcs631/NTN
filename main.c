@@ -45,12 +45,12 @@
 
 int flag_d = 0; 
 int flag_h = 0;
-int flag_host_ipv6 = 0;
+int flag_host_ipv6 = 1;
 int p_port = 8080;
 char *c_dir=NULL;
 char *l_file=NULL;
 char *sws_dir=NULL;
-char *i_address = "0.0.0.0";
+char *i_address = "::1";
 
 
 /*
@@ -100,7 +100,7 @@ ipcheck(char *i_address)
   }
   else if (inet_pton(AF_INET, i_address, buf) == 1) {
     /* IPv4 */
-    /* Default: flag_host_ipv6 = 0; */
+    flag_host_ipv6 = 0;
     return 0;
   }
   else {
