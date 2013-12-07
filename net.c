@@ -66,12 +66,6 @@ char *info[18] = {
   ""                          /* HTTP 0.9 void respond text*/
 };
 
-extern int flag_host_ipv6;
-extern int p_port;
-extern char *c_dir;
-extern char *sws_dir;
-extern char *i_address;
-
 int clientsocket_fd;
 long total_time = 0;
 
@@ -121,7 +115,7 @@ clienttimerinit(void)
 }
 
 int
-clientresponse(int newsocket_fd)
+clientresponse(int newsocket_fd, char *sws_dir)
 {
   clientsocket_fd = newsocket_fd;
   int bufsize = 1024;
@@ -183,7 +177,7 @@ clientresponse(int newsocket_fd)
   /* HTTP0.9/1.0 */
   if (req_info.text)
     printf("%s\n", req_info.text);
-  if (clientwrite(clientsocket_fd, & req_info))
+  if (clientwrite(clientsocket_fd, & req_info, sws_dir))
     return 1;
   // close(clientsocket_fd);
   free(buffer);
@@ -192,7 +186,7 @@ clientresponse(int newsocket_fd)
 }
 
 int
-clientwrite(int clientsocket_fd, ReqInfo * req_info)
+clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
 {
   int clientsource_fd, n;
   char *pathname;
@@ -200,7 +194,13 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info)
   if (req_info->status == 0 || req_info->status == 17) {
     if (strcmp(req_info->resource,"/") == 0) {
       free (req_info->resource);
-      req_info->resource = "/index.html";
+      if ((req_info->resource = (char*)malloc(12*sizeof(char))) == NULL) {
+        fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+        return 1;
+      }
+      strncpy(req_info->resource, "/index.html",11);
+      req_info->resource[11] = '\0';
     }
     if ((pathname = (char*)malloc((strlen(sws_dir)+
                                    strlen(req_info->resource)+1)*sizeof(char))) == NULL) {
@@ -256,7 +256,7 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info)
 }
 
 void
-startsws(void)
+startsws(char *i_address, int p_port, char *sws_dir, int flag_host_ipv6)
 {    
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
@@ -370,7 +370,7 @@ startsws(void)
 
     if (pid == 0) {             /* Child Process */
       close(socket_fd);
-      if (clientresponse(newsocket_fd) > 0)
+      if (clientresponse(newsocket_fd, sws_dir) > 0)
         printf("Client Response Error. PID: %d\n", pid);
       exit(0);    /* exit child process */
     }
