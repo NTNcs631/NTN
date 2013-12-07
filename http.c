@@ -39,7 +39,7 @@
 #define OK 0
 #define CREATED 1
 #define ACCEPTED 2
-#define No_CONTENT 3
+#define NO_CONTENT 3
 #define MOVED_PERMANENTLY 4
 #define MOVED_TEMPORARILY 5
 #define NOT_MODIFIED 6
@@ -53,7 +53,7 @@
 #define SERVICE_UNAVAILABLE 14
 #define VERSION_NOT_SUPPORTED 15
 #define TIME_OUT 16
-#define SIMPLE 17
+#define SIMPLE_RESPONSE 17
 
 void
 parsereq(unsigned char *buffer, ReqInfo *req_info)
@@ -129,7 +129,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
   if (!*buffer) {
     req_info->type = SIMPLE;
     if (req_info->method == GET) {
-      req_info->status = SIMPLE ;       /* simple response */
+      req_info->status = SIMPLE_RESPONSE ;       /* simple response */
       return;
     }
 	else{
