@@ -36,25 +36,6 @@
 
 #include "net.h"
 
-#define OK 0
-#define CREATED 1
-#define ACCEPTED 2
-#define NO_CONTENT 3
-#define MOVED_PERMANENTLY 4
-#define MOVED_TEMPORARILY 5
-#define NOT_MODIFIED 6
-#define BAD_REQUEST 7
-#define UNAUTHORIZED 8
-#define FORBIDDEN 9
-#define NOT_FOUND 10
-#define INTERNAL_SERVER_ERROR 11
-#define NOT_IMPLEMENTED 12
-#define BAD_GATEWAY 13
-#define SERVICE_UNAVAILABLE 14
-#define VERSION_NOT_SUPPORTED 15
-#define TIME_OUT 16
-#define SIMPLE_RESPONSE 17
-
 void
 parsereq(unsigned char *buffer, ReqInfo *req_info)
 {

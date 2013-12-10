@@ -44,7 +44,6 @@
  */
 
 int flag_d = 0; 
-int flag_h = 0;
 int flag_host_ipv6 = 1;
 
 
@@ -160,7 +159,7 @@ main(int argc, char *argv[])
       break;
 
     case 'h':
-      flag_h = 1;
+      usage();
       break;
 
     case 'c':
@@ -194,12 +193,6 @@ main(int argc, char *argv[])
   }
   argc -= optind;
   argv += optind;
-
-  if (flag_h)
-  {
-	  usage();
-	  return 0;
-  }
 
   if (argc==1)
     sws_dir = *argv;

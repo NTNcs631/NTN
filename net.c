@@ -152,7 +152,7 @@ clientresponse(int newsocket_fd, char *sws_dir)
     }
     total_time = 0;
     parsereq(buffer, & req_info);
-  } while(req_info.type != SIMPLE && req_info.status != 7 &&
+  } while(req_info.type != SIMPLE && req_info.status != BAD_REQUEST &&
           buffer[0] != '\n' && buffer[0] != '\r');
   
   printf("\n-----------------------");
@@ -191,7 +191,7 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
   int clientsource_fd, n;
   char *pathname;
   char buf[BUFFSIZE];
-  if (req_info->status == 0 || req_info->status == 17) {
+  if (req_info->status == OK || req_info->status == SIMPLE_RESPONSE) {
     if (strcmp(req_info->resource,"/") == 0) {
       free (req_info->resource);
       if ((req_info->resource = (char*)malloc(12*sizeof(char))) == NULL) {
@@ -199,8 +199,8 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
               strerror(errno));
         return 1;
       }
-      strncpy(req_info->resource, "/index.html",11);
-      req_info->resource[11] = '\0';
+      strncpy(req_info->resource, "/index.html",strlen("/index.html"));
+      req_info->resource[(int)strlen("/index.html")] = '\0';
     }
     if ((pathname = (char*)malloc((strlen(sws_dir)+
                                    strlen(req_info->resource)+1)*sizeof(char))) == NULL) {
@@ -213,13 +213,13 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
     if ((clientsource_fd = open(pathname,O_RDONLY)) == -1)
       switch (errno) {
 	  case EACCES:
-        req_info->status = 9;  /* 403 Forbidden */
+        req_info->status = FORBIDDEN;  /* 403 Forbidden */
         break;
 	  case ENOENT:
-        req_info->status = 10; /* 404 Not Found */
+        req_info->status = NOT_FOUND; /* 404 Not Found */
         break;
       default:
-        req_info->status = 10; /* 404 Not Found(temporary) */
+        req_info->status = NOT_FOUND; /* 404 Not Found(temporary) */
         break;
       }
   }
@@ -234,8 +234,8 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
     return 1;
   }
   switch (req_info->status) {
-  case 0:    /* "200 OK" */
-  case 17:   /* HTTP 0.9 simple request*/
+  case OK:    /* "200 OK" */
+  case SIMPLE_RESPONSE:   /* HTTP 0.9 simple request*/
     switch (req_info->method) {
     case GET:
       while ((n = read(clientsource_fd, buf, BUFFSIZE)) > 0) {
