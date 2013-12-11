@@ -217,7 +217,7 @@ main(int argc, char *argv[])
   // if (c_dir != NULL)
   //   dircheck(c_dir);
 
-    startsws(i_address, p_port, sws_dir, flag_host_ipv6);
+    startsws(i_address, p_port, sws_dir, c_dir, flag_host_ipv6);
 
   return 0;
 }
