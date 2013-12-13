@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.07 2013/11/25 22:42:00 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.09 2013/12/10 19:06:33 Lin Exp $ */
+/* $NetBSD: net.c,v 1.10 2013/12/13 17:51:33 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -422,6 +422,10 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_
    */
   if (listen(socket_fd, 5) < 0) {    
     perror("server: listen");    
+    exit(1);
+  }
+  if(daemon(1, 0) < 0) {
+    perror("daemon/n");
     exit(1);
   }
   
