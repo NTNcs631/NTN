@@ -73,28 +73,32 @@ long total_time = 0;
 #define MAX_TIMEOUT 15
 #define BUFFSIZE 64
 
+
 int
 clientls(char *pathname, int clientsocket_fd)
 {
-  DIR *dp;
-  struct dirent *dirp;
-  if ((dp = opendir(pathname)) == NULL ) {
-    fprintf(stderr, "can't open '%s': %s\n", pathname, strerror(errno));
-    exit(EXIT_FAILURE);
+  struct dirent **namelist;
+  int i, file_number;
+  if ((file_number = scandir(pathname, &namelist, 0, alphasort)) < 0) {
+     fprintf(stderr, "Unable to scan directory: %s\n", strerror(errno));
+     return 1;
   }
-  while ((dirp = readdir(dp)) != NULL ) {
-    if (dirp->d_name[0] == '.')
-      continue;
-    if (write(clientsocket_fd, dirp->d_name, strlen(dirp->d_name)) != strlen(dirp->d_name)) {
-      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-      return 1;
+  for (i=0; i<file_number; i++)
+    if (namelist[i]->d_name[0] == '.')
+      free(namelist[i]);
+    else {
+      if (write(clientsocket_fd, namelist[i]->d_name, strlen(namelist[i]->d_name)) != 
+          strlen(namelist[i]->d_name)) {
+        fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+        return 1;
+      }
+      if (write(clientsocket_fd, "\n", 1) != 1) {
+        fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+        return 1;
+      }
+      free(namelist[i]);
     }
-    if (write(clientsocket_fd, "\n", 1) != 1) {
-      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-      return 1;
-    }
-  }
-  (void)closedir(dp);
+  free(namelist);
   return 0;
 }
 void
