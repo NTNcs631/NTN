@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.07 2013/11/25 22:42:00 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.08 2013/11/25 23:08:33 Lin Exp $ */
+/* $NetBSD: net.c,v 1.09 2013/12/10 19:06:33 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -42,6 +42,7 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 #include "net.h"
 
@@ -72,14 +73,39 @@ long total_time = 0;
 #define MAX_TIMEOUT 15
 #define BUFFSIZE 64
 
+int
+clientls(char *pathname, int clientsocket_fd)
+{
+  DIR *dp;
+  struct dirent *dirp;
+  if ((dp = opendir(pathname)) == NULL ) {
+    fprintf(stderr, "can't open '%s': %s\n", pathname, strerror(errno));
+    exit(EXIT_FAILURE);
+  }
+  while ((dirp = readdir(dp)) != NULL ) {
+    if (dirp->d_name[0] == '.')
+      continue;
+    if (write(clientsocket_fd, dirp->d_name, strlen(dirp->d_name)) != strlen(dirp->d_name)) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+  }
+  (void)closedir(dp);
+  return 0;
+}
 void
-clienttimer(int signal) {
+clienttimer(int signal)
+{
   total_time ++;
   if (total_time > MAX_TIMEOUT) {
-    if (write(clientsocket_fd, info[16], 
-              strlen(info[16])) != strlen(info[16])) {
+    if (write(clientsocket_fd, info[TIME_OUT], 
+              strlen(info[TIME_OUT])) != strlen(info[TIME_OUT])) {
       fprintf(stderr, "Unable to write %s: %s\n",
-              info[16], strerror(errno));
+              info[TIME_OUT], strerror(errno));
       exit(1);
    }
     if (write(clientsocket_fd, "\n", 1) != 1) {
@@ -115,7 +141,7 @@ clienttimerinit(void)
 }
 
 int
-clientresponse(int newsocket_fd, char *sws_dir)
+clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
 {
   clientsocket_fd = newsocket_fd;
   int bufsize = 1024;
@@ -166,9 +192,9 @@ clientresponse(int newsocket_fd, char *sws_dir)
     printf("Client: %s:%d\n", 
            inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof(ipstr)), 
            ntohs(addr->sin_port));
-  } else { // AF_INET6
+  } 
+  else { // AF_INET6
     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&client_address;
-
     printf("Client: %s:%d\n", 
            inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof(ipstr)), 
            ntohs(addr->sin6_port));
@@ -177,7 +203,7 @@ clientresponse(int newsocket_fd, char *sws_dir)
   /* HTTP0.9/1.0 */
   if (req_info.text)
     printf("%s\n", req_info.text);
-  if (clientwrite(clientsocket_fd, & req_info, sws_dir))
+  if (clientwrite(clientsocket_fd, & req_info, sws_dir, c_dir))
     return 1;
   // close(clientsocket_fd);
   free(buffer);
@@ -186,42 +212,86 @@ clientresponse(int newsocket_fd, char *sws_dir)
 }
 
 int
-clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
+clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
 {
-  int clientsource_fd, n;
+  int clientsource_fd, n, need_ls = 0;
+  char *cur_dir = sws_dir;
   char *pathname;
+  char *tmp_pathname;
   char buf[BUFFSIZE];
+  struct stat mode;
+
   if (req_info->status == OK || req_info->status == SIMPLE_RESPONSE) {
-    if (strcmp(req_info->resource,"/") == 0) {
-      free (req_info->resource);
-      if ((req_info->resource = (char*)malloc(12*sizeof(char))) == NULL) {
-        fprintf(stderr, "Unable to allocate memory: %s\n",
-              strerror(errno));
-        return 1;
-      }
-      strncpy(req_info->resource, "/index.html",strlen("/index.html"));
-      req_info->resource[(int)strlen("/index.html")] = '\0';
+    if (strncmp(req_info->resource, "/cgi-bin", strlen("/cgi-bin")) == 0 && c_dir) {
+      cur_dir = c_dir;
+      req_info->resource = req_info->resource + strlen("/cgi-bin");
     }
-    if ((pathname = (char*)malloc((strlen(sws_dir)+
+    if ((pathname = (char*)malloc((strlen(cur_dir)+
                                    strlen(req_info->resource)+1)*sizeof(char))) == NULL) {
       fprintf(stderr, "Unable to allocate memory: %s\n",
               strerror(errno));
       return 1;
     }
-    strcpy(pathname, sws_dir);
+    strcpy(pathname, cur_dir);
     strcat(pathname, req_info->resource);
-    if ((clientsource_fd = open(pathname,O_RDONLY)) == -1)
+    if (stat(pathname, &mode) < 0) {
       switch (errno) {
-	  case EACCES:
+      case EACCES:
         req_info->status = FORBIDDEN;  /* 403 Forbidden */
         break;
-	  case ENOENT:
+      case ENOENT:
         req_info->status = NOT_FOUND; /* 404 Not Found */
         break;
       default:
         req_info->status = NOT_FOUND; /* 404 Not Found(temporary) */
         break;
       }
+    }
+    else {
+      if (S_ISDIR(mode.st_mode)) {
+        if ((tmp_pathname = (char*)malloc(strlen(pathname)+strlen("/index.html")+1)) == NULL) {
+          fprintf(stderr, "Unable to allocate memory: %s\n",
+                  strerror(errno));
+          return 1;
+        }
+        strcpy(tmp_pathname, pathname);
+        strcat(tmp_pathname, "/index.html");
+        if (stat(tmp_pathname, &mode) < 0) {
+          switch (errno) {
+          case EACCES:
+            req_info->status = FORBIDDEN;  /* 403 Forbidden */
+            break;
+          case ENOENT:
+            need_ls = 1;
+            break;
+          default:
+            req_info->status = NOT_FOUND; /* 404 Not Found(temporary) */
+            break;
+          }
+        }
+		else {
+          free(pathname);
+          pathname = tmp_pathname;
+        }
+      }
+      if (need_ls)
+        ;
+      else {
+        if ((clientsource_fd = open(pathname,O_RDONLY)) == -1) {
+          switch (errno) {
+          case EACCES:
+            req_info->status = FORBIDDEN;  /* 403 Forbidden */
+            break;
+          case ENOENT:
+            req_info->status = NOT_FOUND; /* 404 Not Found */
+            break;
+          default:
+            req_info->status = NOT_FOUND; /* 404 Not Found(temporary) */
+            break;
+          }
+        }
+      }
+    }
   }
   if (write(clientsocket_fd, info[req_info->status], 
             strlen(info[req_info->status])) != strlen(info[req_info->status])) {
@@ -238,14 +308,22 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
   case SIMPLE_RESPONSE:   /* HTTP 0.9 simple request*/
     switch (req_info->method) {
     case GET:
-      while ((n = read(clientsource_fd, buf, BUFFSIZE)) > 0) {
-        if (write(clientsocket_fd, buf, n) != n) {
-          fprintf(stderr, "Unable to write: %s\n",
+      if (need_ls) {
+        if (clientls(pathname,clientsocket_fd) < 0) {
+          fprintf(stderr, "Unable to list files: %s\n",
                   strerror(errno));
           return 1;
         }
       }
-	  return 0;
+	  else
+        while ((n = read(clientsource_fd, buf, BUFFSIZE)) > 0) {
+          if (write(clientsocket_fd, buf, n) != n) {
+            fprintf(stderr, "Unable to write: %s\n",
+                    strerror(errno));
+            return 1;
+          }
+        }
+      return 0;
       break;
 /*	case HEAD:  */
 /*	case POST:  */
@@ -256,8 +334,8 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir)
 }
 
 void
-startsws(char *i_address, int p_port, char *sws_dir, int flag_host_ipv6)
-{    
+startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_ipv6)
+{
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
   pid_t pid;
@@ -370,7 +448,7 @@ startsws(char *i_address, int p_port, char *sws_dir, int flag_host_ipv6)
 
     if (pid == 0) {             /* Child Process */
       close(socket_fd);
-      if (clientresponse(newsocket_fd, sws_dir) > 0)
+      if (clientresponse(newsocket_fd, sws_dir, c_dir) > 0)
         printf("Client Response Error. PID: %d\n", pid);
       exit(0);    /* exit child process */
     }
