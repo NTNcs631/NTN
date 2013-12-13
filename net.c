@@ -76,10 +76,10 @@ void
 clienttimer(int signal) {
   total_time ++;
   if (total_time > MAX_TIMEOUT) {
-    if (write(clientsocket_fd, info[16], 
-              strlen(info[16])) != strlen(info[16])) {
+    if (write(clientsocket_fd, info[TIME_OUT], 
+              strlen(info[TIME_OUT])) != strlen(info[TIME_OUT])) {
       fprintf(stderr, "Unable to write %s: %s\n",
-              info[16], strerror(errno));
+              info[TIME_OUT], strerror(errno));
       exit(1);
    }
     if (write(clientsocket_fd, "\n", 1) != 1) {
