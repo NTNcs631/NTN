@@ -345,7 +345,7 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
 }
 
 void
-startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_ipv6, int flag_d)
+startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int host_ipv, int flag_d)
 {
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
@@ -355,11 +355,12 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_
   int status;
  
   printf("\n-----------Starting Sever-----------\n");
+  printf("host_ipv: %d\n", host_ipv);
   /* 
    * Some IPv6 socket cannot turn off IPV6_V6ONLY, 
    * so set them separately.
    */
-  if (flag_host_ipv6) {
+  if ((host_ipv == IPADDR_V6) || (host_ipv == INIT)) {
     /* socket: IPv6 */
     if ((socket_fd = socket(AF_INET6, SOCK_STREAM, 0)) > 0) {
       printf("Socket created: %d\n", socket_fd);
@@ -385,9 +386,13 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_
   }
   
   /* SET socket address/host machine/port number */ 
-  if (flag_host_ipv6) {
+  if ((host_ipv == IPADDR_V6) || (host_ipv == INIT)) {
     /* i_address: IPv6 format */
-    (void)inet_pton(AF_INET6, i_address, address6.sin6_addr.s6_addr);
+    if (host_ipv == INIT) 
+      address6.sin6_addr = in6addr_any;
+    else 
+      (void)inet_pton(AF_INET6, i_address, address6.sin6_addr.s6_addr);
+    
     address6.sin6_family = AF_INET6;
     address6.sin6_port = htons(p_port);
   }
@@ -398,7 +403,7 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_
     address.sin_port = htons(p_port);
   }
 
-  if (flag_host_ipv6) {
+  if ((host_ipv == IPADDR_V6) || (host_ipv == INIT)) {
     /* IPv6 Host */
     if (bind(socket_fd, (struct sockaddr *) &address6, 
             sizeof(address6)) == 0) {
@@ -442,7 +447,7 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_
     /* 
      * Block process until a client connects to the server. 
      */   
-    if (flag_host_ipv6) {
+    if ((host_ipv == IPADDR_V6) || (host_ipv == INIT)) {
       if ((newsocket_fd=accept(socket_fd, (struct sockaddr *) &address6,
                             &addrlen)) < 0) {    
         perror("server: accept");    

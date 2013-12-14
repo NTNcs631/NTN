@@ -33,7 +33,7 @@ in the UNIX Environment, Fall 2013, SIT.
 
 3. [x] Client~INFO may not be displayed correctly occasionally when using telnet to connect. (Web browser connection behaved better.) [Fixed in net.c v1.04]
 
-4. [x] Always show the usage when giving a local direction. [x] (example: ./sws dir) [Fixed in main.c v1.02]
+4. [x] Always show the usage when giving a local direction.(example: ./sws dir) [Fixed in main.c v1.02]
 
 5. [x] No support for IPv6 [Fixed in net.c 1.07]
 
@@ -41,7 +41,7 @@ in the UNIX Environment, Fall 2013, SIT.
 
 7. [ ] Yields 400 for unknown requests (should be not-implemented).
 
-8. [x] By default only binds on IPv4. [Fixed in patch Dec6/2013].
+8. [x] By default only binds on IPv4. [Fixed in patch Dec6/2013 & patch Dec14/2013].
 
 9. [x] Magic numbers on request status code define. [Fixed in net.h v1.06, http.c v1.03]
 
