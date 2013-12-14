@@ -43,7 +43,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <dirent.h>
-
+#include<time.h>
 #include "net.h"
 
 char *info[18] = {
@@ -196,6 +196,51 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
   printf(" INFO ");
   printf("-----------------------\n");
   
+  char *log = NULL;/*LOGGER*/
+  if ((log = (char*)malloc((1024)*sizeof(char))) == NULL) {
+    fprintf(stderr, "Unable to allocate memory: %s\n",
+    strerror(errno));
+    exit(1);
+  }
+  if(1)//here 1 should be the l_flag for logger
+  {
+    char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
+    time_t timep;
+    struct tm *p;
+    time(&timep);
+    p=localtime(&timep);
+	char year[32],mon[32],day[32],hour[32],min[32],sec[32];
+	sprintf(year,"%d-",(1900+p->tm_year));
+	sprintf(mon,"%d-",(1+p->tm_mon));
+	sprintf(day,"%d-",(p->tm_mday));
+	sprintf(hour,"-%d-",(p->tm_hour));
+	sprintf(min,"%d-",(p->tm_min));
+	sprintf(sec,"%d ",(p->tm_sec));
+	strcat(log,year);
+	strcat(log,mon);
+	strcat(log,day);
+	strcat(log,wday[p->tm_wday]);
+	strcat(log,hour);
+	strcat(log,min);
+	strcat(log,sec);
+  
+    int nnn=999; 
+    if(getenv("CONTENT_LENGTH")) 
+      nnn=atoi(getenv("CONTENT_LENGTH")); 
+    char content_length[32];
+    sprintf(content_length,"content length: %d\n\n",nnn);
+    strcat(log,content_length);
+    }
+  int fd;
+  fd = open("logfile", O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
+  if(fd<0) {
+	  perror("open logger");
+	  exit(1);
+  }
+  dup2(fd, STDOUT_FILENO);
+  close(fd);
+  write(STDOUT_FILENO, log, strlen(log));
+
   /* Client Info */
   if (client_address.ss_family == AF_INET) {
     struct sockaddr_in *addr = (struct sockaddr_in *)&client_address;
