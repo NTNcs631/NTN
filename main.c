@@ -44,7 +44,7 @@
  */
 
 int flag_d = 0; 
-int flag_host_ipv6 = 1;
+int host_ipv = INIT;
 
 
 /*
@@ -89,12 +89,12 @@ ipcheck(char *i_address)
 
   if (inet_pton(AF_INET6, i_address, buf) == 1) {
     /* IPv6 */
-    flag_host_ipv6 = 1;
+    host_ipv = IPADDR_V6;
     return 0;
   }
   else if (inet_pton(AF_INET, i_address, buf) == 1) {
     /* IPv4 */
-    flag_host_ipv6 = 0;
+    host_ipv = IPADDR_V4;
     return 0;
   }
   else {
@@ -147,9 +147,9 @@ main(int argc, char *argv[])
 {
   int ch;
   int p_port = 8080;
-  char *c_dir=NULL;
-  char *l_file=NULL;
-  char *sws_dir=NULL;
+  char *c_dir = NULL;
+  char *l_file = NULL;
+  char *sws_dir = NULL;
   char *i_address = "::1";
   while ((ch = getopt(argc, argv, "dhc:i:l:p:")) != -1) {
     switch (ch) {
@@ -203,7 +203,7 @@ main(int argc, char *argv[])
   if (dircheck(sws_dir))
     exit(EXIT_FAILURE);
 
-  startsws(i_address, p_port, sws_dir, c_dir, flag_host_ipv6, flag_d);
+  startsws(i_address, p_port, sws_dir, c_dir, host_ipv, flag_d);
 
   return 0;
 }

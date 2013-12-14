@@ -29,14 +29,17 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- #define INIT 0
-/* Type */
+#define INIT 0
+/* HTTP Type */
 #define SIMPLE 1
 #define FULL 2
-/* Method */
+/* HTTP Method */
 #define GET 1
 #define HEAD 2
 #define POST 3
+/* Host Address Version */
+#define IPADDR_V4 1
+#define IPADDR_V6 2
 
 #ifdef AF_INET6
   #define IPv6 1
