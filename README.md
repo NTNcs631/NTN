@@ -7,29 +7,29 @@ in the UNIX Environment, Fall 2013, SIT.
 
 ## Final Project:
 
-#### DESCRIPTION
+#### Description
 
 [sws.1.pdf](http://www.cs.stevens.edu/~jschauma/631A/sws.1.pdf)
 
-#### References:
+#### References
 
-> http://www.cs.stevens.edu/~jschauma/631A/
+> www.cs.stevens.edu/~jschauma/631A/
 
-> http://linux.die.net/man/
+> linux.die.net
 
-> http://www.gnu.org/software/libc/manual/html_node/Internet-Address-Formats.html
+> www.gnu.org
 
-> http://www.linuxhowtos.org/C_C++/socket.htm
+> www.linuxhowtos.org
 
-> http://pubs.opengroup.org/
+> pubs.opengroup.org
 
-> http://www.beej.us/
+> www.beej.us
 
-#### Pending BUGs
+#### BUGs History
 
 1. [x] Options Validation Check: dircheck(): closedir() [Fixed in main.c v1.02]
 
-2. [ ] Options Validation Check: still at "rudimentary" stage
+2. [x] Options Validation Check: still at "rudimentary" stage
 
 3. [x] Client~INFO may not be displayed correctly occasionally when using telnet to connect. (Web browser connection behaved better.) [Fixed in net.c v1.04]
 
@@ -41,8 +41,10 @@ in the UNIX Environment, Fall 2013, SIT.
 
 7. [ ] Yields 400 for unknown requests (should be not-implemented).
 
-8. [x] By default only binds on IPv4. (Fixed in patch Dec6/2013).
+8. [x] By default only binds on IPv4. [Fixed in patch Dec6/2013].
 
-9. [ ] Magic numbers on request status code define.
+9. [x] Magic numbers on request status code define. [Fixed in net.h v1.06, http.c v1.03]
 
-10. [ ] Memory mapping error for "Get / HTTP/1.0".
+10. [x] Memory mapping error for "Get / HTTP/1.0". [Fixed in patch Dec6/2013]
+
+11. [ ] Always 522 Timeout while dealing requests from web browser.  
