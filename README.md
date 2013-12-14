@@ -15,13 +15,13 @@ in the UNIX Environment, Fall 2013, SIT.
 
 > www.cs.stevens.edu/~jschauma/631A/
 
-> linux.die.net
+> www.linux.die.net
 
 > www.gnu.org
 
 > www.linuxhowtos.org
 
-> pubs.opengroup.org
+> www.pubs.opengroup.org
 
 > www.beej.us
 
