@@ -47,4 +47,4 @@ in the UNIX Environment, Fall 2013, SIT.
 
 10. [x] Memory mapping error for "Get / HTTP/1.0". [Fixed in patch Dec6/2013]
 
-11. [ ] Always 522 Timeout while dealing requests from web browser.  
+11. [x] Always 522 Timeout while dealing requests from web browser. [Fixed in net.c v1.12]

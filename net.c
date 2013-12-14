@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.11 2013/12/13 21:11:02 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.10 2013/12/13 17:51:33 Lin Exp $ */
+/* $NetBSD: net.c,v 1.12 2013/12/13 22:38:33 Lin Exp $ */
 
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -173,7 +173,7 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
   
   /* HTTP0.9/1.0 */
   initreq(& req_info);
-  do {
+  while(1) {
     memset(buffer, 0, strlen((char *)buffer));
     if (recv(clientsocket_fd, buffer, bufsize, 0) < 0) {
       fprintf(stderr, "Failed to receive Client Request: %s\n",
@@ -182,8 +182,15 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
     }
     total_time = 0;
     parsereq(buffer, & req_info);
-  } while(req_info.type != SIMPLE && req_info.status != BAD_REQUEST &&
-          buffer[0] != '\n' && buffer[0] != '\r');
+    if (req_info.type == SIMPLE)
+      break;
+    if (req_info.status == BAD_REQUEST)
+      break;
+    if ((buffer[0] == '\n') || (buffer[0] == '\r'))
+      break;
+    if (strstr((char *)buffer,"\r\n\r\n"))
+      break;
+  }
   
   printf("\n-----------------------");
   printf(" INFO ");
