@@ -16,17 +16,17 @@
  *    products derived from this software without specific prior written 
  *    permission.
  * 
- * THIS SOFTWARE IS PROVIDED BY WEIYU XUE "AS IS" AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED. IN NO EVENT SHALL WEIYU XUE BE LIABLE FOR ANY DIRECT, 
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
+ * HOLDERS AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,15 +151,10 @@ main(int argc, char *argv[])
   char *l_file=NULL;
   char *sws_dir=NULL;
   char *i_address = "::1";
-  // printf("argc: %d  argv: %s\n", argc, *argv);
   while ((ch = getopt(argc, argv, "dhc:i:l:p:")) != -1) {
     switch (ch) {
     case 'd':
       flag_d = 1;
-      break;
-
-    case 'h':
-      usage();
       break;
 
     case 'c':
@@ -187,6 +182,7 @@ main(int argc, char *argv[])
       break;
 
     default:
+    case 'h':
     case '?':
       usage();
     }
@@ -196,7 +192,6 @@ main(int argc, char *argv[])
 
   if (argc==1)
     sws_dir = *argv;
-  //sws_dir = argv[0];
   else
     usage();
 
@@ -208,16 +203,7 @@ main(int argc, char *argv[])
   if (dircheck(sws_dir))
     exit(EXIT_FAILURE);
 
-  // printf("flag_d: %d, flag_h: %d\n", flag_d, flag_h);
-  // printf("argc: %d  argv: %s\n", argc, *argv);
-  // printf("c_dir: %s; i_address: %s; l_file: %s; p_port: %d; sws_dir: %s\n",
-  //        c_dir, i_address, l_file, p_port, sws_dir);
-
-  /* Options Validation Check */
-  // if (c_dir != NULL)
-  //   dircheck(c_dir);
-
-    startsws(i_address, p_port, sws_dir, c_dir, flag_host_ipv6);
+  startsws(i_address, p_port, sws_dir, c_dir, flag_host_ipv6, flag_d);
 
   return 0;
 }

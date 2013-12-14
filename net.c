@@ -1,6 +1,6 @@
-/* $NetBSD: net.c,v 1.07 2013/11/25 22:42:00 Weiyu Exp $ */
+/* $NetBSD: net.c,v 1.11 2013/12/13 21:11:02 Weiyu Exp $ */
 /* $NetBSD: net.c,v 1.10 2013/12/13 17:51:33 Lin Exp $ */
- 
+
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
  * 
@@ -16,17 +16,17 @@
  *    products derived from this software without specific prior written 
  *    permission.
  * 
- * THIS SOFTWARE IS PROVIDED BY WEIYU XUE "AS IS" AND ANY EXPRESS OR 
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
- * ARE DISCLAIMED. IN NO EVENT SHALL WEIYU XUE BE LIABLE FOR ANY DIRECT, 
- * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING 
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
+ * HOLDERS AND CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include <netinet/in.h>
 #include <stdio.h>
@@ -64,7 +64,7 @@ char *info[18] = {
   "503 Service Unavailable",
   "505 Version Not Supported",
   "522 Connection Timed Out status",
-  ""                          /* HTTP 0.9 void respond text*/
+  "" /* HTTP 0.9 void respond text*/
 };
 
 int clientsocket_fd;
@@ -197,12 +197,12 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
            inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof(ipstr)), 
            ntohs(addr->sin_port));
   } 
-  else { // AF_INET6
+  else { /* AF_INET6 */
     struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&client_address;
     printf("Client: %s:%d\n", 
            inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof(ipstr)), 
            ntohs(addr->sin6_port));
-}
+  }
 
   /* HTTP0.9/1.0 */
   if (req_info.text)
@@ -338,14 +338,14 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
 }
 
 void
-startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_ipv6)
+startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_ipv6, int flag_d)
 {
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
   pid_t pid;
   struct sockaddr_in address;
   struct sockaddr_in6 address6;
-  // int status;
+  int status;
  
   printf("\n-----------Starting Sever-----------\n");
   /* 
@@ -424,8 +424,9 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_
     perror("server: listen");    
     exit(1);
   }
-  if(daemon(1, 0) < 0) {
-    perror("daemon/n");
+
+  if(!flag_d && daemon(1, 0) < 0) {
+    perror("daemon");
     exit(1);
   }
   
@@ -462,7 +463,9 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int flag_host_
     }
     else
       close(newsocket_fd);
+
     // sleep(2);
-    // wait(&status);
+    if (flag_d)
+      wait(&status);
  }
 }
