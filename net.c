@@ -412,6 +412,8 @@ startlogging(char *sws_dir, char *l_file)
     fprintf(stderr, "Unable to write: %s\n", strerror(errno));
     return;
   }
+  if (log_status == SIMPLE_RESPONSE)
+    log_status = OK;
   if (write(log_fd, info[log_status], strlen(info[log_status])) != 
       strlen(info[log_status])) {
     fprintf(stderr, "Unable to write: %s\n", strerror(errno));
