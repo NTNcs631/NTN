@@ -1,4 +1,4 @@
-/* $NetBSD: http.c,v 1.04 2013/12/15 00:45:22 Lin Exp $ */
+/* $NetBSD: http.c,v 1.05 2013/12/15 04:41:22 Lin Exp $ */
 /* $NetBSD: http.c,v 1.03 2013/12/06 20:00:02 Qihuang Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
@@ -41,11 +41,17 @@
 
 #include "net.h"
 
+extern char *req_time;
+extern char *first_line;
+extern char *log_length;
+
+#define GMT_LENGTH 24
+
 void
 parsereq(unsigned char *buffer, ReqInfo *req_info)
 {
   char *endptr = NULL, *tmp;
-  int len;
+  int len, i;
   if (buffer[1] == '\n')
     return; 
   if (req_info->text) {
@@ -68,6 +74,17 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
       exit(1);
     }
     strcpy(req_info->text, (char*)buffer);
+    for (i=0; i<strlen(req_info->text); i++)
+      if (req_info->text[i] == '\n' || req_info->text[i] == '\r')
+        break;
+    if ((first_line = (char*)malloc((i+3)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      exit(1);
+    }
+    strcpy(first_line, "\"");
+    strncat(first_line, req_info->text, i);
+	strcat(first_line, "\"");
   }
   if (req_info->type == FULL)
     return;
@@ -265,11 +282,12 @@ clienthead(int clientsocket_fd, char *info[18], ReqInfo *req_info, char *pathnam
   char *file_length;
   char hostname[128];
 
-  if (write(clientsocket_fd, "HTTP/1.0 ", strlen("HTTP/1.0 ")) != 
-      strlen("HTTP/1.0 ")) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
+  if (req_info->type != SIMPLE)
+    if (write(clientsocket_fd, "HTTP/1.0 ", strlen("HTTP/1.0 ")) != 
+        strlen("HTTP/1.0 ")) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
   if (write(clientsocket_fd, info[req_info->status], 
             strlen(info[req_info->status])) != strlen(info[req_info->status])) {
     fprintf(stderr, "Unable to write %s: %s\n",
@@ -284,85 +302,106 @@ clienthead(int clientsocket_fd, char *info[18], ReqInfo *req_info, char *pathnam
     fprintf(stderr, "Unable to get gmt time.\n");
     return 1;
   }
-  if (write(clientsocket_fd, "Date: ", strlen("Date: ")) != strlen("Date: ")) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
+  if ((req_time = (char*)malloc((strlen(gmt_str)+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return 1;
   }
-  if (write(clientsocket_fd, gmt_str, strlen(gmt_str)) != strlen(gmt_str)) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
+  strcpy(req_time, gmt_str);
+  req_time[GMT_LENGTH] = '\0';
+  if (req_info->type != SIMPLE) {
+    if (write(clientsocket_fd, "Date: ", strlen("Date: ")) != strlen("Date: ")) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, gmt_str, strlen(gmt_str)) != strlen(gmt_str)) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (gethostname(hostname, sizeof(hostname)) < 0) {
+      fprintf(stderr, "Unable to get hostname: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, "Server: ", strlen("Server: ")) != 
+        strlen("Server: ")) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, hostname, strlen(hostname)) != 
+        strlen(hostname)) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
   }
-  if (gethostname(hostname, sizeof(hostname)) < 0) {
-    fprintf(stderr, "Unable to get hostname: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, "Server: ", strlen("Server: ")) != 
-      strlen("Server: ")) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, hostname, strlen(hostname)) != 
-      strlen(hostname)) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, "\n", 1) != 1) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (getmtime(pathname, &mtime_str)) {
-    fprintf(stderr, "Unable to get modify time.\n");
-    return 1;
-  }
-  if (write(clientsocket_fd, "Last-Modified: ", strlen("Last-Modified: ")) != 
-            strlen("Last-Modified: ")) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, mtime_str, strlen(mtime_str)) != 
-      strlen(mtime_str)) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (gettype(& file_type, pathname)) {
-    fprintf(stderr, "Unable to get type.\n");
-    return 1;
-  }
-  if (write(clientsocket_fd, "Content-Type: ", strlen("Content-Type: ")) != 
-      strlen("Content-Type: ")) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, file_type, strlen(file_type)) != 
-      strlen(file_type)) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, "\n", 1) != 1) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
+  if (req_info->status != OK && req_info->status != SIMPLE_RESPONSE)
+    return 0;
+  if (req_info->type != SIMPLE) {
+    if (getmtime(pathname, &mtime_str)) {
+      fprintf(stderr, "Unable to get modify time.\n");
+      return 1;
+    }
+    if (write(clientsocket_fd, "Last-Modified: ", strlen("Last-Modified: ")) != 
+              strlen("Last-Modified: ")) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, mtime_str, strlen(mtime_str)) != 
+        strlen(mtime_str)) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (gettype(& file_type, pathname)) {
+      fprintf(stderr, "Unable to get type.\n");
+      return 1;
+    }
+    if (write(clientsocket_fd, "Content-Type: ", strlen("Content-Type: ")) != 
+        strlen("Content-Type: ")) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, file_type, strlen(file_type)) != 
+        strlen(file_type)) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
   }
   if ((file_length = getlength(pathname)) == NULL) {
     fprintf(stderr, "Unable to get type.\n");
     return 1;
   }
-  if (write(clientsocket_fd, "Content-Length: ", strlen("Content-Length: ")) != 
-      strlen("Content-Length: ")) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
+  if ((log_length = (char*)malloc((strlen(file_length)+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return 1;
   }
-  if (write(clientsocket_fd, file_length, strlen(file_length)) != 
-      strlen(file_length)) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, "\n", 1) != 1) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
-  }
-  if (write(clientsocket_fd, "\n", 1) != 1) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
+  strcpy(log_length, file_length);
+  if (req_info->type != SIMPLE) {
+    if (write(clientsocket_fd, "Content-Length: ", strlen("Content-Length: ")) != 
+        strlen("Content-Length: ")) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, file_length, strlen(file_length)) != 
+        strlen(file_length)) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
   }
 
   return 0;
