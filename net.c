@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.11 2013/12/13 21:11:02 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.14 2013/12/15 00:44:33 Lin Exp $ */
+/* $NetBSD: net.c,v 1.15 2013/12/15 04:42:33 Lin Exp $ */
 /* $NetBSD: net.c,v 1.13 2013/12/14 22:32:13 Qihuang Exp $ */
 
 /* Copyright (c) 2013, NTNcs631
@@ -70,6 +70,11 @@ char *info[18] = {
 
 int clientsocket_fd;
 long total_time = 0;
+char *log_address;
+char *req_time;
+char *first_line;
+int log_status;
+char *log_length = "0\0";
 
 #define MAX_TIMEOUT 15
 #define BUFFSIZE 64
@@ -172,6 +177,37 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
     return 1;
   }
   
+  printf("\n-----------------------");
+  printf(" INFO ");
+  printf("-----------------------\n");
+  
+  /* Client Info */
+  if (client_address.ss_family == AF_INET) {
+    struct sockaddr_in *addr = (struct sockaddr_in *)&client_address;
+
+    printf("Client: %s:%d\n", 
+           inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof(ipstr)), 
+           ntohs(addr->sin_port));
+	if ((log_address = (char*)malloc(1024*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return 1;
+    }
+    strcpy(log_address, (char*)inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof(ipstr)));
+  } 
+  else { /* AF_INET6 */
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&client_address;
+    printf("Client: %s:%d\n", 
+           inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof(ipstr)), 
+           ntohs(addr->sin6_port));
+	if ((log_address = (char*)malloc(1024*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return 1;
+    }
+    strcpy(log_address, (char*)inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof(ipstr)));
+  }
+
   /* HTTP0.9/1.0 */
   initreq(& req_info);
   while(1) {
@@ -192,27 +228,6 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
     if (strstr((char *)buffer,"\r\n\r\n"))
       break;
   }
-  
-  printf("\n-----------------------");
-  printf(" INFO ");
-  printf("-----------------------\n");
-  
-  /* Client Info */
-  if (client_address.ss_family == AF_INET) {
-    struct sockaddr_in *addr = (struct sockaddr_in *)&client_address;
-
-    printf("Client: %s:%d\n", 
-           inet_ntop(AF_INET, &addr->sin_addr, ipstr, sizeof(ipstr)), 
-           ntohs(addr->sin_port));
-  } 
-  else { /* AF_INET6 */
-    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)&client_address;
-    printf("Client: %s:%d\n", 
-           inet_ntop(AF_INET6, &addr->sin6_addr, ipstr, sizeof(ipstr)), 
-           ntohs(addr->sin6_port));
-  }
-
-  /* HTTP0.9/1.0 */
   if (req_info.text)
     printf("%s\n", req_info.text);
   if (clientwrite(clientsocket_fd, & req_info, sws_dir, c_dir))
@@ -305,24 +320,11 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
       }
     }
   }
-  if (req_info->type == FULL) {
-    if (clienthead(clientsocket_fd, info, req_info, pathname) < 0) {
-      fprintf(stderr, "Unable to write head: %s\n",
-              strerror(errno));
-      return 1;
-    }
-  }
-  else {
-    if (write(clientsocket_fd, info[req_info->status], 
-              strlen(info[req_info->status])) != strlen(info[req_info->status])) {
-      fprintf(stderr, "Unable to write %s: %s\n",
-              info[req_info->status], strerror(errno));
-      return 1;
-    }
-    if (write(clientsocket_fd, "\n", 1) != 1) {
-      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-      return 1;
-    }
+  log_status = req_info->status;
+  if (clienthead(clientsocket_fd, info, req_info, pathname) < 0) {
+    fprintf(stderr, "Unable to write head: %s\n",
+            strerror(errno));
+    return 1;
   }
   switch (req_info->status) {
   case OK:    /* "200 OK" */
@@ -355,7 +357,91 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
 }
 
 void
-startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int host_ipv, int flag_d)
+startlogging(char *sws_dir, char *l_file)
+{
+  int log_fd;
+  int len;
+  char *pathname;
+
+  if (l_file[0] == '/')
+    pathname = l_file;
+  else {
+    len = strlen(sws_dir)+strlen(l_file)+1;
+    if ((pathname = (char*)malloc((len+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return;
+    }
+    strcpy(pathname, sws_dir);
+    strcat(pathname, "/");
+    strcat(pathname, l_file);
+    pathname[len] = '\0';
+  }
+  if ((log_fd = open(pathname, O_RDWR|O_CREAT|O_APPEND, S_IRUSR | S_IWUSR)) < 0) {
+    fprintf(stderr, "Unable to open %s: %s\n",
+            pathname, strerror(errno));
+    return;
+  }
+  if (write(log_fd, log_address, strlen(log_address)) != 
+      strlen(log_address)) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, " ", strlen(" ")) != 
+      strlen(" ")) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, req_time, strlen(req_time)) != 
+      strlen(req_time)) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, " ", strlen(" ")) != 
+      strlen(" ")) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, first_line, strlen(first_line)) != 
+      strlen(first_line)) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, " ", strlen(" ")) != 
+      strlen(" ")) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, info[log_status], strlen(info[log_status])) != 
+      strlen(info[log_status])) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, " ", strlen(" ")) != 
+      strlen(" ")) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, log_length, strlen(log_length)) != 
+      strlen(log_length)) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, " ", strlen(" ")) != 
+      strlen(" ")) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  if (write(log_fd, "\n", strlen("\n")) != 
+      strlen("\n")) {
+    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+    return;
+  }
+  (void)close(log_fd);
+}
+
+void
+startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, char *l_file, int host_ipv, int flag_d)
 {
   int socket_fd, newsocket_fd;
   socklen_t addrlen;
@@ -365,7 +451,6 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int host_ipv, 
   int status;
  
   printf("\n-----------Starting Sever-----------\n");
-  printf("host_ipv: %d\n", host_ipv);
   /* 
    * Some IPv6 socket cannot turn off IPV6_V6ONLY, 
    * so set them separately.
@@ -481,6 +566,7 @@ startsws(char *i_address, int p_port, char *sws_dir, char *c_dir, int host_ipv, 
       close(socket_fd);
       if (clientresponse(newsocket_fd, sws_dir, c_dir) > 0)
         printf("Client Response Error. PID: %d\n", pid);
+      startlogging(sws_dir, l_file);
       exit(0);    /* exit child process */
     }
     else
