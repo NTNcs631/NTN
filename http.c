@@ -1,4 +1,4 @@
-/* $NetBSD: http.c,v 1.05 2013/12/15 04:41:22 Lin Exp $ */
+/* $NetBSD: http.c,v 1.06 2013/12/15 08:33:22 Lin Exp $ */
 /* $NetBSD: http.c,v 1.03 2013/12/06 20:00:02 Qihuang Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
@@ -52,8 +52,6 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
 {
   char *endptr = NULL, *tmp;
   int len, i;
-  if (buffer[1] == '\n')
-    return; 
   if (req_info->text) {
     len = strlen((char *)buffer);
     if ((tmp = malloc((len+strlen(req_info->text)+1)*sizeof(char))) == NULL) {
@@ -86,6 +84,9 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
     strncat(first_line, req_info->text, i);
 	strcat(first_line, "\"");
   }
+  if (buffer[1] == '\n') {
+    return; 
+  }
   if (req_info->type == FULL)
     return;
   if (strncmp((char*)buffer, "GET ", 4) == 0) {
@@ -99,8 +100,6 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
   else if (strncmp((char*)buffer, "POST ", 5) == 0) {
     req_info->method = POST;
     buffer = buffer + 5;
-    req_info->status = NOT_IMPLEMENTED;      /* 501 Not Implemented */
-    return;
   }
   else {
     req_info->status = BAD_REQUEST;       /* 400 Bad Request */
@@ -168,6 +167,10 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
 void
 initreq(ReqInfo * req_info)
 {
+  req_info->content_type = NULL;
+  req_info->content_length = NULL;
+  req_info->host = NULL;
+  req_info->body = NULL;
   req_info->resource = NULL;
   req_info->text = NULL;
   req_info->method = INIT;
@@ -178,6 +181,14 @@ initreq(ReqInfo * req_info)
 void
 freereq(ReqInfo * req_info)
 {
+  if (req_info->content_type)
+    free(req_info->content_type);
+  if (req_info->content_length)
+    free(req_info->content_length);
+  if (req_info->host)
+    free(req_info->host);
+  if (req_info->body)
+    free(req_info->body);
   if (req_info->resource)
     free(req_info->resource);
   if (req_info->text)
@@ -337,7 +348,7 @@ clienthead(int clientsocket_fd, char *info[18], ReqInfo *req_info, char *pathnam
       return 1;
     }
   }
-  if (req_info->status != OK && req_info->status != SIMPLE_RESPONSE)
+  if (req_info->status != OK && req_info->status != SIMPLE_RESPONSE && req_info->status != CREATED)
     return 0;
   if (req_info->type != SIMPLE) {
     if (getmtime(pathname, &mtime_str)) {
@@ -403,6 +414,71 @@ clienthead(int clientsocket_fd, char *info[18], ReqInfo *req_info, char *pathnam
       return 1;
     }
   }
-
   return 0;
+}
+
+void
+parsetext(char *text, ReqInfo *req_info)
+{
+  int len;
+  char *ptr_begin, *ptr_end, *tmp;
+
+  if ((ptr_begin = strcasestr(text, "content-type: "))) {
+    ptr_begin = ptr_begin + strlen("content-type: ");
+    tmp = ptr_begin;
+    while(*tmp != '\r' && *tmp != '\n')
+      tmp ++;
+    ptr_end = tmp;
+    len = ptr_end-ptr_begin;
+    if ((req_info->content_type = (char*)malloc((len+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return;
+    }
+    strncpy(req_info->content_type, ptr_begin, len);
+    req_info->content_type[len] = '\0';
+  }
+
+  if((ptr_begin = strcasestr(text, "content-length: "))) {
+    ptr_begin = ptr_begin + strlen("content-length: ");
+    tmp = ptr_begin;
+    while(*tmp != '\r' && *tmp != '\n')
+      tmp ++;
+    ptr_end = tmp;
+    len = ptr_end-ptr_begin;
+    if ((req_info->content_length = (char*)malloc((len+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return;
+    }
+    strncpy(req_info->content_length, ptr_begin, len);
+    req_info->content_length[len] = '\0';
+  }
+
+  if ((ptr_begin = strcasestr(text, "host: "))) {
+    ptr_begin = ptr_begin + strlen("host: ");
+    tmp = ptr_begin;
+    while(*tmp != '\r' && *tmp != '\n')
+      tmp ++;
+    ptr_end = tmp;
+    len = ptr_end-ptr_begin;
+    if ((req_info->host = (char*)malloc((len+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      return;
+    }
+    strncpy(req_info->host, ptr_begin, len);
+    req_info->host[len] = '\0';
+  }
+  if (req_info->method == POST)
+    if ((ptr_begin = strstr(text, "\r\n\r\n"))) {
+      ptr_begin = ptr_begin + strlen("\r\n\r\n");
+      if ((req_info->body = (char*)malloc((strlen(ptr_begin)+1)*sizeof(char))) == NULL) {
+        fprintf(stderr, "Unable to allocate memory: %s\n",
+                strerror(errno));
+        return;
+      }
+      strcpy(req_info->body, ptr_begin);
+      req_info->body[strlen(ptr_begin)-4] = '\0';
+    }
 }
