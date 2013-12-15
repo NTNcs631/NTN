@@ -79,6 +79,7 @@ void startsws(char *, int, char *, char *, int, int);
 int clientwrite(int, ReqInfo *, char *, char*);
 
 /* Define in http.c */
+int clienthead(int, char*[18], ReqInfo *, char *);
 void freereq(ReqInfo *);
 void initreq(ReqInfo *);
 void parsereq(unsigned char*, ReqInfo *);

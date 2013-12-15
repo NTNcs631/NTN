@@ -1,5 +1,6 @@
 /* $NetBSD: net.c,v 1.11 2013/12/13 21:11:02 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.12 2013/12/13 22:38:33 Lin Exp $ */
+/* $NetBSD: net.c,v 1.14 2013/12/15 00:44:33 Lin Exp $ */
+/* $NetBSD: net.c,v 1.13 2013/12/14 22:32:13 Qihuang Exp $ */
 
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -43,7 +44,7 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <dirent.h>
-#include<time.h>
+
 #include "net.h"
 
 char *info[18] = {
@@ -196,51 +197,6 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
   printf(" INFO ");
   printf("-----------------------\n");
   
-  char *log = NULL;/*LOGGER*/
-  if ((log = (char*)malloc((1024)*sizeof(char))) == NULL) {
-    fprintf(stderr, "Unable to allocate memory: %s\n",
-    strerror(errno));
-    exit(1);
-  }
-  if(1)//here 1 should be the l_flag for logger
-  {
-    char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-    time_t timep;
-    struct tm *p;
-    time(&timep);
-    p=localtime(&timep);
-	char year[32],mon[32],day[32],hour[32],min[32],sec[32];
-	sprintf(year,"%d-",(1900+p->tm_year));
-	sprintf(mon,"%d-",(1+p->tm_mon));
-	sprintf(day,"%d-",(p->tm_mday));
-	sprintf(hour,"-%d-",(p->tm_hour));
-	sprintf(min,"%d-",(p->tm_min));
-	sprintf(sec,"%d ",(p->tm_sec));
-	strcat(log,year);
-	strcat(log,mon);
-	strcat(log,day);
-	strcat(log,wday[p->tm_wday]);
-	strcat(log,hour);
-	strcat(log,min);
-	strcat(log,sec);
-  
-    int nnn=999; 
-    if(getenv("CONTENT_LENGTH")) 
-      nnn=atoi(getenv("CONTENT_LENGTH")); 
-    char content_length[32];
-    sprintf(content_length,"content length: %d\n\n",nnn);
-    strcat(log,content_length);
-    }
-  int fd;
-  fd = open("logfile", O_RDWR|O_CREAT|O_APPEND, S_IRUSR|S_IWUSR);
-  if(fd<0) {
-	  perror("open logger");
-	  exit(1);
-  }
-  dup2(fd, STDOUT_FILENO);
-  close(fd);
-  write(STDOUT_FILENO, log, strlen(log));
-
   /* Client Info */
   if (client_address.ss_family == AF_INET) {
     struct sockaddr_in *addr = (struct sockaddr_in *)&client_address;
@@ -349,15 +305,24 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
       }
     }
   }
-  if (write(clientsocket_fd, info[req_info->status], 
-            strlen(info[req_info->status])) != strlen(info[req_info->status])) {
-    fprintf(stderr, "Unable to write %s: %s\n",
-            info[req_info->status], strerror(errno));
-    return 1;
+  if (req_info->type == FULL) {
+    if (clienthead(clientsocket_fd, info, req_info, pathname) < 0) {
+      fprintf(stderr, "Unable to write head: %s\n",
+              strerror(errno));
+      return 1;
+    }
   }
-  if (write(clientsocket_fd, "\n", 1) != 1) {
-    fprintf(stderr, "Unable to write: %s\n", strerror(errno));
-    return 1;
+  else {
+    if (write(clientsocket_fd, info[req_info->status], 
+              strlen(info[req_info->status])) != strlen(info[req_info->status])) {
+      fprintf(stderr, "Unable to write %s: %s\n",
+              info[req_info->status], strerror(errno));
+      return 1;
+    }
+    if (write(clientsocket_fd, "\n", 1) != 1) {
+      fprintf(stderr, "Unable to write: %s\n", strerror(errno));
+      return 1;
+    }
   }
   switch (req_info->status) {
   case OK:    /* "200 OK" */
