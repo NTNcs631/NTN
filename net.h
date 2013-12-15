@@ -67,6 +67,10 @@
 #define SIMPLE_RESPONSE 17
 
 typedef struct {
+  char *content_type;
+  char *content_length;
+  char *host;
+  char *body;
   char *resource;
   char *text;
   int method;
@@ -83,3 +87,4 @@ int clienthead(int, char*[18], ReqInfo *, char *);
 void freereq(ReqInfo *);
 void initreq(ReqInfo *);
 void parsereq(unsigned char*, ReqInfo *);
+void parsetext(char *, ReqInfo *);

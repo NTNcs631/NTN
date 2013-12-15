@@ -1,5 +1,5 @@
 /* $NetBSD: net.c,v 1.11 2013/12/13 21:11:02 Weiyu Exp $ */
-/* $NetBSD: net.c,v 1.15 2013/12/15 04:42:33 Lin Exp $ */
+/* $NetBSD: net.c,v 1.16 2013/12/15 08:32:33 Lin Exp $ */
 /* $NetBSD: net.c,v 1.13 2013/12/14 22:32:13 Qihuang Exp $ */
 
 /* Copyright (c) 2013, NTNcs631
@@ -160,6 +160,7 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
   socklen_t client_addrlen;
   struct sockaddr_storage client_address;
   char ipstr[INET6_ADDRSTRLEN];
+  int already = 0, already2 = 0;
 
   /* Set a timer to detect timeout */
   clienttimerinit();
@@ -223,13 +224,42 @@ clientresponse(int newsocket_fd, char *sws_dir, char *c_dir)
       break;
     if (req_info.status == BAD_REQUEST)
       break;
-    if ((buffer[0] == '\n') || (buffer[0] == '\r'))
-      break;
-    if (strstr((char *)buffer,"\r\n\r\n"))
-      break;
+    if (req_info.method == POST) {
+      if (already) {
+        if ((buffer[0] == '\n') || (buffer[0] == '\r'))
+          break;
+        else
+          already = 0;
+      }
+      else {
+        if ((buffer[0] == '\n') || (buffer[0] == '\r'))
+          already = 1;
+      }   
+    }
+    else {
+      if ((buffer[0] == '\n') || (buffer[0] == '\r'))
+        break;
+    }
+    if (req_info.method == POST) {
+      if (already2) {
+        if (strstr((char *)buffer,"\r\n\r\n"))
+          break;
+	  }
+	  else {
+        if (strstr((char *)buffer,"\r\n\r\n"))
+          already2 = 1;
+      }
+    }
+	else {
+      if (strstr((char *)buffer,"\r\n\r\n"))
+        break;
+	}
   }
   if (req_info.text)
     printf("%s\n", req_info.text);
+  parsetext(req_info.text, &req_info);
+  if (req_info.method == POST && !req_info.content_length)
+    req_info.status = BAD_REQUEST;
   if (clientwrite(clientsocket_fd, & req_info, sws_dir, c_dir))
     return 1;
   // close(clientsocket_fd);
@@ -267,7 +297,16 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
         req_info->status = FORBIDDEN;  /* 403 Forbidden */
         break;
       case ENOENT:
-        req_info->status = NOT_FOUND; /* 404 Not Found */
+        if (req_info->method == POST) {
+          req_info->status = CREATED;  /* 201 Created*/
+          if ((clientsource_fd = open(pathname,O_RDWR|O_CREAT|O_APPEND, S_IRUSR | S_IWUSR)) == -1) {
+            fprintf(stderr, "Unable to open %s: %s\n",
+                    pathname, strerror(errno));
+            return 1;
+          }
+        }
+		else
+          req_info->status = NOT_FOUND; /* 404 Not Found */
         break;
       default:
         req_info->status = NOT_FOUND; /* 404 Not Found(temporary) */
@@ -304,13 +343,17 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
       if (need_ls)
         ;
       else {
-        if ((clientsource_fd = open(pathname,O_RDONLY)) == -1) {
+        if ((clientsource_fd = open(pathname,O_RDWR|O_CREAT|O_APPEND, S_IRUSR | S_IWUSR)) == -1) {
           switch (errno) {
           case EACCES:
             req_info->status = FORBIDDEN;  /* 403 Forbidden */
             break;
           case ENOENT:
-            req_info->status = NOT_FOUND; /* 404 Not Found */
+            if (req_info->method == POST) {
+              req_info->status = CREATED;  /* 201 Created*/
+            }
+            else
+              req_info->status = NOT_FOUND; /* 404 Not Found */
             break;
           default:
             req_info->status = NOT_FOUND; /* 404 Not Found(temporary) */
@@ -327,7 +370,8 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
     return 1;
   }
   switch (req_info->status) {
-  case OK:    /* "200 OK" */
+  case OK:    /* 200 OK */
+  case CREATED: /* 201 Created*/
   case SIMPLE_RESPONSE:   /* HTTP 0.9 simple request*/
     switch (req_info->method) {
     case GET:
@@ -348,11 +392,19 @@ clientwrite(int clientsocket_fd, ReqInfo * req_info, char *sws_dir, char *c_dir)
         }
       return 0;
       break;
-/*	case HEAD:  */
-/*	case POST:  */
+    case HEAD:
+      break;
+    case POST:
+      if (write(clientsource_fd, req_info->body, strlen(req_info->body)) != strlen(req_info->body)) {
+        fprintf(stderr, "Unable to write: %s\n",
+                strerror(errno));
+        return 1;
+      }
+      break;
     }
     break;
   }
+  (void)close(clientsource_fd);
   return 0;
 }
 
