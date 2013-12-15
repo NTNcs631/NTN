@@ -29,15 +29,16 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <time.h>
 #include <sys/stat.h>
+
+#include <ctype.h>
+#include <errno.h>
 #include <magic.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "net.h"
 
@@ -82,7 +83,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
     }
     strcpy(first_line, "\"");
     strncat(first_line, req_info->text, i);
-	strcat(first_line, "\"");
+    strcat(first_line, "\"");
   }
   if (buffer[1] == '\n') {
     return; 
@@ -134,7 +135,7 @@ parsereq(unsigned char *buffer, ReqInfo *req_info)
       req_info->status = SIMPLE_RESPONSE ;       /* simple response */
       return;
     }
-	else{
+    else{
       req_info->status = BAD_REQUEST;       /* 400 Bad Request */
       return;
     }
@@ -348,7 +349,8 @@ clienthead(int clientsocket_fd, char *info[18], ReqInfo *req_info, char *pathnam
       return 1;
     }
   }
-  if (req_info->status != OK && req_info->status != SIMPLE_RESPONSE && req_info->status != CREATED)
+  if (req_info->status != OK && req_info->status != SIMPLE_RESPONSE && 
+      req_info->status != CREATED)
     return 0;
   if (req_info->type != SIMPLE) {
     if (getmtime(pathname, &mtime_str)) {
@@ -473,7 +475,8 @@ parsetext(char *text, ReqInfo *req_info)
   if (req_info->method == POST)
     if ((ptr_begin = strstr(text, "\r\n\r\n"))) {
       ptr_begin = ptr_begin + strlen("\r\n\r\n");
-      if ((req_info->body = (char*)malloc((strlen(ptr_begin)+1)*sizeof(char))) == NULL) {
+      if ((req_info->body = 
+           (char*)malloc((strlen(ptr_begin)+1)*sizeof(char))) == NULL) {
         fprintf(stderr, "Unable to allocate memory: %s\n",
                 strerror(errno));
         return;

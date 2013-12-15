@@ -28,15 +28,16 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <arpa/inet.h>
+
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "net.h"
 
