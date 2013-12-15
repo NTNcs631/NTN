@@ -1,5 +1,5 @@
 /* $NetBSD: main.c,v 1.03 2013/11/25 22:42:00 Weiyu Exp $ */
-/* $NetBSD: main.c,v 1.04 2013/11/26 23:01:11 Lin Exp $ */
+/* $NetBSD: main.c,v 1.05 2013/12/15 04:41:33 Lin Exp $ */
  
 /* Copyright (c) 2013, NTNcs631
  * All rights reserved.
@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -104,14 +105,31 @@ ipcheck(char *i_address)
 }
 
 int
-filecheck(char *file)
+filecheck(char *file, char *sws_dir)
 {
+  int len;
+  char *pathname;
   struct stat file_stat;
 
-  if (stat(file, &file_stat) == -1) {
+  if (!file)
+    return 0;
+  if (file[0] == '/') 
+    pathname = file;
+  else {
+    len = strlen(sws_dir)+strlen(file)+1;
+    if ((pathname = (char*)malloc((len+1)*sizeof(char))) == NULL) {
+      fprintf(stderr, "Unable to allocate memory: %s\n",
+              strerror(errno));
+      exit(1);
+    }
+    strcpy(pathname, sws_dir);
+    strcat(pathname, "/");
+    strcat(pathname, file);
+    pathname[len] = '\0';
+  }
+  if (stat(pathname, &file_stat) == -1) {
     if(errno == ENOENT) {
-      fprintf(stderr, "No such file: %s\n", file);
-      return 1;
+      return 0;
     }
     else {
       perror("Stat Error");
@@ -122,8 +140,8 @@ filecheck(char *file)
   if(S_ISREG(file_stat.st_mode))
     return 0;
   else {
-    fprintf(stderr, "Not a regular file: %s\n", file);
-    return 1;
+    fprintf(stderr, "Warning: Not a regular file: %s\n", file);
+    return 0;
   }
 }
 
@@ -171,8 +189,6 @@ main(int argc, char *argv[])
 
     case 'l':
       l_file = optarg;
-      if (filecheck(l_file))
-        exit(EXIT_FAILURE);
       break;
 
     case 'p':
@@ -199,11 +215,12 @@ main(int argc, char *argv[])
     printf("Host environment does not support IPv6.");
     exit(EXIT_FAILURE);
   }
-
   if (dircheck(sws_dir))
     exit(EXIT_FAILURE);
+  if (filecheck(l_file, sws_dir))
+    exit(EXIT_FAILURE);
 
-  startsws(i_address, p_port, sws_dir, c_dir, host_ipv, flag_d);
+  startsws(i_address, p_port, sws_dir, c_dir, l_file, host_ipv, flag_d);
 
   return 0;
 }
