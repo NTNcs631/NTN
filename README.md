@@ -39,7 +39,7 @@ in the UNIX Environment, Fall 2013, SIT.
 
 6. [x] Does not handle simultaneous clients, only sequential. [Fixed in net.c v1.03]
 
-7. [ ] Yields 400 for unknown requests (should be not-implemented).
+7. [x] Yields 400 for unknown requests (should be not-implemented). [All GET/HEAD/POST are implemented from main.c v1.05, net.c v1.15, http.c v1.05. For HTTP/0.9 simple request, GET is the only decent request, otherwise Bad Requests.]
 
 8. [x] By default only binds on IPv4. [Fixed in patch Dec6/2013 & patch Dec14/2013].
 
@@ -48,3 +48,11 @@ in the UNIX Environment, Fall 2013, SIT.
 10. [x] Memory mapping error for "Get / HTTP/1.0". [Fixed in patch Dec6/2013]
 
 11. [x] Always 522 Timeout while dealing requests from web browser. [Fixed in net.c v1.12]
+
+12. [ ] Unexpected feature could occur on some systems which IPV6_V6ONLY is turned on by default.(In such systems, sws will listen on IPv4 or IPv6 only, which against the feature: "By default sws will listen on all IPv4 and IPv6 addresses on this host.")
+
+13. [ ] In daemon model, which accept simultaneous connections would create zombie processes.
+
+#### Notice
+
+1. An HTTP/1.0 server should respond with a 400 message if it cannot determine the length of the request message's content.
