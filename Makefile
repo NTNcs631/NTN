@@ -20,7 +20,7 @@ LFLAGS =
 #   if I want to link in libraries (libx.so or libx.a) I use the -llibname 
 #   option, something like (this will link in libmylib.so and libm.so:
 # LIBS = -lbsd
-LIBS =
+LIBS = -lmagic
 
 # source files
 SRCS = main.c net.c http.c
